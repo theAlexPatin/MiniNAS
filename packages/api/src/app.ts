@@ -16,6 +16,9 @@ import shareRoutes from "./routes/share.js";
 import adminRoutes from "./routes/admin.js";
 import cliRoutes from "./routes/cli.js";
 import { cliAuthMiddleware } from "./middleware/cli-auth.js";
+import { webdavAuthMiddleware } from "./middleware/webdav-auth.js";
+import webdavRoutes from "./routes/webdav.js";
+import webdavTokenRoutes from "./routes/webdav-tokens.js";
 
 const app = new Hono();
 
@@ -46,6 +49,7 @@ api.route("/volumes", volumesRoutes);
 api.route("/upload", uploadRoutes);
 api.route("/search", searchRoutes);
 api.route("/preview", previewRoutes);
+api.route("/webdav-tokens", webdavTokenRoutes);
 
 // Admin routes (auth + admin required)
 const adminApi = new Hono();
@@ -60,6 +64,12 @@ const cliApi = new Hono();
 cliApi.use("*", cliAuthMiddleware);
 cliApi.route("/", cliRoutes);
 app.route("/api/v1/cli", cliApi);
+
+// WebDAV (Basic Auth with app tokens)
+const dav = new Hono();
+dav.use("*", webdavAuthMiddleware);
+dav.route("/", webdavRoutes);
+app.route("/dav", dav);
 
 // Hourly cleanup of abandoned uploads
 setInterval(cleanupStagingDir, 60 * 60 * 1000);

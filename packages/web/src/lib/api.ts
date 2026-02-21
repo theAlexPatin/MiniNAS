@@ -55,6 +55,14 @@ export interface VolumeInfo {
   usedBytes: number;
 }
 
+export interface WebDAVToken {
+  id: string;
+  user_id: string;
+  label: string;
+  created_at: string;
+  last_used_at: string | null;
+}
+
 export const api = {
   listFiles(volume: string, path: string = ""): Promise<DirectoryListing> {
     return request(`/files/${volume}/${path}`);
@@ -92,5 +100,24 @@ export const api = {
 
   getDownloadUrl(volume: string, path: string): string {
     return `${API_BASE}/download/${volume}/${path}`;
+  },
+
+  createWebDAVToken(
+    label: string,
+  ): Promise<{ id: string; label: string; token: string }> {
+    return request("/webdav-tokens", {
+      method: "POST",
+      body: JSON.stringify({ label }),
+    });
+  },
+
+  listWebDAVTokens(): Promise<{
+    tokens: WebDAVToken[];
+  }> {
+    return request("/webdav-tokens");
+  },
+
+  revokeWebDAVToken(id: string): Promise<{ ok: boolean }> {
+    return request(`/webdav-tokens/${id}`, { method: "DELETE" });
   },
 };
