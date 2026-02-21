@@ -46,27 +46,27 @@ export default function UploadZone({ onFilesSelected }: UploadZoneProps) {
         onDrop={handleDrop}
         className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
           isDragging
-            ? "border-brand-500 bg-brand-500/10"
-            : "border-gray-700 hover:border-gray-600"
+            ? "border-blue-500 bg-blue-50"
+            : "border-gray-300 hover:border-gray-400"
         }`}
       >
         <Upload
           size={32}
-          className={`mx-auto mb-3 ${isDragging ? "text-brand-400" : "text-gray-500"}`}
+          className={`mx-auto mb-3 ${isDragging ? "text-blue-500" : "text-gray-400"}`}
         />
-        <p className="text-gray-400 mb-3">
+        <p className="text-gray-500 mb-3">
           Drag and drop files here, or
         </p>
         <div className="flex items-center justify-center gap-3">
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="px-4 py-2 bg-brand-600 hover:bg-brand-500 rounded-md text-sm font-medium transition-colors"
+            className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-md text-sm font-medium transition-colors"
           >
             Choose Files
           </button>
           <button
             onClick={() => folderInputRef.current?.click()}
-            className="flex items-center gap-1.5 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-md text-sm font-medium transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-md text-sm font-medium transition-colors shadow-sm"
           >
             <FolderUp size={16} />
             Upload Folder

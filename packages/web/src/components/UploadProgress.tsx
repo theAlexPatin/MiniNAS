@@ -43,13 +43,13 @@ export default function UploadProgress({
   const completed = uploads.filter((u) => u.status === "complete");
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 shadow-2xl z-50">
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
       {/* Header */}
       <div
-        className="flex items-center justify-between px-4 py-2 cursor-pointer hover:bg-gray-800/50"
+        className="flex items-center justify-between px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors"
         onClick={() => setCollapsed(!collapsed)}
       >
-        <span className="text-sm font-medium">
+        <span className="text-sm font-medium text-gray-900">
           {active.length > 0
             ? `Uploading ${active.length} file${active.length > 1 ? "s" : ""}...`
             : `${completed.length} upload${completed.length > 1 ? "s" : ""} complete`}
@@ -61,12 +61,12 @@ export default function UploadProgress({
                 e.stopPropagation();
                 onClearCompleted();
               }}
-              className="text-xs text-gray-400 hover:text-gray-200"
+              className="text-xs text-gray-400 hover:text-gray-600"
             >
               Clear completed
             </button>
           )}
-          {collapsed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          {collapsed ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
         </div>
       </div>
 
@@ -76,7 +76,7 @@ export default function UploadProgress({
           {uploads.map((item) => (
             <div
               key={item.id}
-              className="flex items-center gap-3 py-2 border-t border-gray-800/50"
+              className="flex items-center gap-3 py-2 border-t border-gray-100"
             >
               {/* Status icon */}
               {item.status === "complete" ? (
@@ -87,16 +87,16 @@ export default function UploadProgress({
 
               {/* File info */}
               <div className="flex-1 min-w-0">
-                <p className="text-sm truncate">{item.file.name}</p>
+                <p className="text-sm truncate text-gray-900">{item.file.name}</p>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <div className="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                  <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-300 ${
                         item.status === "error"
                           ? "bg-red-500"
                           : item.status === "complete"
                             ? "bg-green-500"
-                            : "bg-brand-500"
+                            : "bg-blue-500"
                       }`}
                       style={{ width: `${item.progress}%` }}
                     />
@@ -106,7 +106,7 @@ export default function UploadProgress({
                   </span>
                 </div>
                 {item.error && (
-                  <p className="text-xs text-red-400 mt-0.5">{item.error}</p>
+                  <p className="text-xs text-red-500 mt-0.5">{item.error}</p>
                 )}
               </div>
 
@@ -115,23 +115,23 @@ export default function UploadProgress({
                 {item.status === "uploading" && (
                   <button
                     onClick={() => onPause(item.id)}
-                    className="p-1 hover:bg-gray-700 rounded"
+                    className="p-1 hover:bg-gray-100 rounded transition-colors"
                   >
-                    <Pause size={14} />
+                    <Pause size={14} className="text-gray-500" />
                   </button>
                 )}
                 {item.status === "paused" && (
                   <button
                     onClick={() => onResume(item.id)}
-                    className="p-1 hover:bg-gray-700 rounded"
+                    className="p-1 hover:bg-gray-100 rounded transition-colors"
                   >
-                    <Play size={14} />
+                    <Play size={14} className="text-gray-500" />
                   </button>
                 )}
                 {item.status !== "complete" && (
                   <button
                     onClick={() => onCancel(item.id)}
-                    className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-red-400"
+                    className="p-1 hover:bg-red-50 rounded text-gray-400 hover:text-red-500 transition-colors"
                   >
                     <X size={14} />
                   </button>

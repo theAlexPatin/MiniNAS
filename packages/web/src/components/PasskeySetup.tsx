@@ -31,18 +31,18 @@ export default function PasskeySetup() {
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <img src="/logo.png" alt="MiniNAS" className="w-24 h-24 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Welcome to MiniNAS</h1>
-          <p className="text-gray-400">
+          <h1 className="text-2xl font-bold mb-2 text-gray-900">Welcome to MiniNAS</h1>
+          <p className="text-gray-500">
             Set up your passkey to secure your NAS. This will use your device's
             biometric authentication (Touch ID, Face ID, etc.)
           </p>
         </div>
 
-        <div className="bg-brand-900/50 border border-brand-800/50 rounded-lg p-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
           {status === "success" ? (
             <div className="text-center py-4">
               <CheckCircle size={48} className="mx-auto mb-3 text-green-500" />
-              <p className="text-lg font-medium">Passkey registered!</p>
+              <p className="text-lg font-medium text-gray-900">Passkey registered!</p>
               <p className="text-gray-400 text-sm mt-1">Redirecting...</p>
             </div>
           ) : (
@@ -50,7 +50,7 @@ export default function PasskeySetup() {
               <button
                 onClick={handleRegister}
                 disabled={status === "loading"}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-brand-600 hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-brand-600 hover:bg-brand-700 text-white disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
               >
                 {status === "loading" ? (
                   <Loader2 size={20} className="animate-spin" />
@@ -63,7 +63,7 @@ export default function PasskeySetup() {
               </button>
 
               {error && (
-                <p className="mt-3 text-sm text-red-400 text-center">
+                <p className="mt-3 text-sm text-red-500 text-center">
                   {error}
                 </p>
               )}

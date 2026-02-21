@@ -20,16 +20,16 @@ function formatBytes(bytes: number): string {
 }
 
 function getFileIcon(entry: FileEntry, size: number) {
-  if (entry.isDirectory) return <Folder size={size} className="text-brand-400" />;
+  if (entry.isDirectory) return <Folder size={size} className="text-blue-500" />;
   const mime = entry.mimeType || "";
-  if (mime.startsWith("image/")) return <FileImage size={size} className="text-purple-400" />;
-  if (mime.startsWith("video/")) return <FileVideo size={size} className="text-pink-400" />;
-  if (mime.startsWith("audio/")) return <FileAudio size={size} className="text-green-400" />;
-  if (mime.startsWith("text/")) return <FileText size={size} className="text-yellow-400" />;
+  if (mime.startsWith("image/")) return <FileImage size={size} className="text-purple-500" />;
+  if (mime.startsWith("video/")) return <FileVideo size={size} className="text-pink-500" />;
+  if (mime.startsWith("audio/")) return <FileAudio size={size} className="text-green-500" />;
+  if (mime.startsWith("text/")) return <FileText size={size} className="text-amber-500" />;
   if (mime.includes("zip") || mime.includes("tar") || mime.includes("gzip"))
-    return <FileArchive size={size} className="text-orange-400" />;
+    return <FileArchive size={size} className="text-orange-500" />;
   if (mime.includes("json") || mime.includes("javascript") || mime.includes("xml"))
-    return <FileCode size={size} className="text-cyan-400" />;
+    return <FileCode size={size} className="text-cyan-600" />;
   return <File size={size} className="text-gray-400" />;
 }
 
@@ -53,7 +53,7 @@ export default function FileGrid({
 }: FileGridProps) {
   if (entries.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-gray-500">
+      <div className="flex flex-col items-center justify-center py-20 text-gray-400">
         <Folder size={48} className="mb-3 opacity-50" />
         <p>This folder is empty</p>
       </div>
@@ -72,9 +72,9 @@ export default function FileGrid({
               onPreview(entry);
             }
           }}
-          className="flex flex-col items-center gap-2 p-3 rounded-lg hover:bg-gray-800/50 transition-colors group text-center"
+          className="flex flex-col items-center gap-2 p-3 rounded-lg hover:bg-gray-100 transition-colors group text-center"
         >
-          <div className="w-16 h-16 flex items-center justify-center rounded-lg bg-gray-800/50">
+          <div className="w-16 h-16 flex items-center justify-center rounded-lg bg-gray-100">
             {hasThumbnailSupport(entry) ? (
               <img
                 src={`/api/v1/preview/${volume}/${entry.path}?size=small`}
@@ -92,9 +92,9 @@ export default function FileGrid({
             </span>
           </div>
           <div className="w-full min-w-0">
-            <p className="text-sm truncate">{entry.name}</p>
+            <p className="text-sm truncate text-gray-900">{entry.name}</p>
             {!entry.isDirectory && (
-              <p className="text-xs text-gray-500">{formatBytes(entry.size)}</p>
+              <p className="text-xs text-gray-400">{formatBytes(entry.size)}</p>
             )}
           </div>
         </button>
