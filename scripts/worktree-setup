@@ -9,13 +9,13 @@
 # If source_worktree is not specified, it will use the main worktree.
 #
 # Symlinked (avoids reinstall):
-#   node_modules, .mininas/thumbnails
+#   node_modules
 #
 # Copied (env files):
 #   .env
 #
-# Linked (shared state):
-#   data/mininas.db (SQLite database)
+# Shared via ~/.mininas/data/ (no symlinks needed):
+#   mininas.db, thumbnails, uploads
 
 set -e
 
@@ -79,35 +79,14 @@ else
 fi
 echo ""
 
-# ── 3. Ensure data/cache directories exist ───────────────────────────
-echo "==> Creating data directories"
-mkdir -p "$CURRENT_WORKTREE/packages/api/data"
-mkdir -p "$CURRENT_WORKTREE/.mininas/thumbnails"
-mkdir -p "$CURRENT_WORKTREE/.mininas/uploads"
+# ── 3. Ensure shared data directory exists ────────────────────────────
+echo "==> Ensuring ~/.mininas/data exists"
+mkdir -p "$HOME/.mininas/data/thumbnails"
+mkdir -p "$HOME/.mininas/data/uploads"
+echo "    All worktrees share ~/.mininas/data/ by default"
 echo ""
 
-# ── 4. Symlink the SQLite database (shared across worktrees) ────────
-DB_SRC="$SOURCE_WORKTREE/packages/api/data/mininas.db"
-DB_DST="$CURRENT_WORKTREE/packages/api/data/mininas.db"
-if [ -f "$DB_SRC" ] && [ ! -e "$DB_DST" ]; then
-  ln -s "$DB_SRC" "$DB_DST"
-  echo "==> Linked shared database"
-elif [ ! -e "$DB_DST" ]; then
-  echo "==> No existing database found (one will be created on first run)"
-fi
-echo ""
-
-# ── 5. Symlink thumbnail cache ───────────────────────────────────────
-THUMB_SRC="$SOURCE_WORKTREE/.mininas/thumbnails"
-THUMB_DST="$CURRENT_WORKTREE/.mininas/thumbnails"
-if [ -d "$THUMB_SRC" ] && [ ! -L "$THUMB_DST" ]; then
-  rm -rf "$THUMB_DST" 2>/dev/null || true
-  ln -s "$THUMB_SRC" "$THUMB_DST"
-  echo "==> Linked thumbnail cache"
-fi
-echo ""
-
-# ── 6. Symlink build caches ──────────────────────────────────────────
+# ── 4. Symlink build caches ──────────────────────────────────────────
 echo "==> Linking build caches"
 cd "$SOURCE_WORKTREE"
 while IFS= read -r dir; do

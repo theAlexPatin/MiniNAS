@@ -114,9 +114,9 @@ On first visit, you'll be prompted to register a Passkey — this is your login 
 | `SESSION_SECRET` | — | Secret for signing session tokens (generate with `openssl rand -hex 32`) |
 | `RP_ID` | `localhost` | WebAuthn Relying Party ID (your domain or `localhost`) |
 | `RP_ORIGIN` | `http://localhost:4321` | Frontend URL for WebAuthn verification |
-| `DB_PATH` | `./data/mininas.db` | SQLite database location |
-| `THUMBNAIL_DIR` | `./.mininas/thumbnails` | Where generated thumbnails are cached |
-| `UPLOAD_STAGING_DIR` | `./.mininas/uploads` | Temporary directory for in-progress uploads |
+| `DB_PATH` | `~/.mininas/data/mininas.db` | SQLite database location |
+| `THUMBNAIL_DIR` | `~/.mininas/data/thumbnails` | Where generated thumbnails are cached |
+| `UPLOAD_STAGING_DIR` | `~/.mininas/data/uploads` | Temporary directory for in-progress uploads |
 
 ## Access from Anywhere
 
