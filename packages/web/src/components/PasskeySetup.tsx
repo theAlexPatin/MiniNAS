@@ -1,10 +1,21 @@
-import { useState } from "react";
-import { registerPasskey } from "../lib/passkeys";
-import { Fingerprint, Loader2, CheckCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { registerPasskey, checkSetupNeeded } from "../lib/passkeys";
+import { Fingerprint, Loader2, CheckCircle, ShieldX } from "lucide-react";
 
 export default function PasskeySetup() {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [error, setError] = useState("");
+  const [setupDisabled, setSetupDisabled] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    checkSetupNeeded().then((needed) => {
+      if (!needed) {
+        setSetupDisabled(true);
+      }
+      setChecking(false);
+    });
+  }, []);
 
   const handleRegister = async () => {
     setStatus("loading");
@@ -25,6 +36,43 @@ export default function PasskeySetup() {
       setError(err instanceof Error ? err.message : "Registration failed");
     }
   };
+
+  if (checking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <Loader2 size={32} className="animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
+  if (setupDisabled) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="max-w-md w-full">
+          <div className="text-center mb-8">
+            <img src="/logo.png" alt="MiniNAS" className="w-24 h-24 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold mb-2 text-gray-900">Setup Unavailable</h1>
+            <p className="text-gray-500">
+              An admin account has already been configured. Setup can only be
+              run once during initial installation.
+            </p>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            <div className="text-center py-4">
+              <ShieldX size={48} className="mx-auto mb-3 text-red-400" />
+              <p className="text-sm text-gray-500 mt-2">
+                If you need to log in, go to the{" "}
+                <a href="/login" className="text-brand-600 hover:text-brand-700 font-medium">
+                  login page
+                </a>.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">

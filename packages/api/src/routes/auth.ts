@@ -98,6 +98,10 @@ auth.get("/registration/options", async (c) => {
 
 // Verify registration
 auth.post("/registration/verify", async (c) => {
+  if (hasUsers()) {
+    return c.json({ error: "Registration not available" }, 403);
+  }
+
   const db = getDb();
   const body = await c.req.json();
   const challengeId = getCookie(c, "challenge_id");
