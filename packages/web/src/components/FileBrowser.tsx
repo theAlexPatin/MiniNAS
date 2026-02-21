@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import VolumeSelector from "./VolumeSelector";
 import FileList from "./FileList";
@@ -20,12 +20,43 @@ const queryClient = new QueryClient({
   },
 });
 
-function FileBrowserInner({ initialVolume }: { initialVolume?: string }) {
+function parsePath(pathname: string): { volume: string; path: string } {
+  const match = pathname.match(/^\/volumes\/([^/]+)(?:\/(.*))?$/);
+  if (!match) return { volume: "", path: "" };
+  return {
+    volume: decodeURIComponent(match[1]),
+    path: match[2] ? decodeURIComponent(match[2]).replace(/\/$/, "") : "",
+  };
+}
+
+function buildUrl(vol: string, pathStr: string): string {
+  let url = "/volumes";
+  if (vol) {
+    url += `/${encodeURIComponent(vol)}`;
+    if (pathStr) {
+      url += "/" + pathStr.split("/").map(encodeURIComponent).join("/");
+    }
+  }
+  return url;
+}
+
+function FileBrowserInner() {
   const { isAuthenticated, isLoading: authLoading, logout } = useAuth();
-  const [volume, setVolume] = useState(initialVolume || "");
-  const [currentPath, setCurrentPath] = useState("");
+
+  // Single source of truth: the URL pathname.
+  // volume and currentPath are derived from it — no stale closure issues.
+  const [locationPath, setLocationPath] = useState(
+    () => (typeof window !== "undefined" ? window.location.pathname : "/volumes")
+  );
+  const isInitialNav = useRef(true);
+
+  const { volume, path: currentPath } = useMemo(
+    () => parsePath(locationPath),
+    [locationPath],
+  );
 
   const { data, isLoading, error, refetch } = useFiles(volume, currentPath);
+
   const deleteMutation = useDeleteFile(volume, currentPath);
   const mkdirMutation = useCreateDirectory(volume, currentPath);
   const {
@@ -41,15 +72,40 @@ function FileBrowserInner({ initialVolume }: { initialVolume?: string }) {
   const [shareFile, setShareFile] = useState<FileEntry | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
-  const navigateTo = useCallback((path: string) => {
-    setCurrentPath(path);
+  // Navigate to a directory path within the current volume
+  const navigateTo = useCallback((newPath: string) => {
+    // Read volume fresh from current locationPath to avoid stale closures
+    const { volume: currentVol } = parsePath(
+      typeof window !== "undefined" ? window.location.pathname : "/volumes"
+    );
+    const url = buildUrl(currentVol, newPath);
+    history.pushState(null, "", url);
+    setLocationPath(url);
+    setPreviewFile(null);
   }, []);
 
-  const navigateUp = useCallback(() => {
-    const parts = currentPath.split("/").filter(Boolean);
-    parts.pop();
-    setCurrentPath(parts.join("/"));
-  }, [currentPath]);
+  // Handle volume selection
+  const handleVolumeSelect = useCallback((id: string) => {
+    const url = buildUrl(id, "");
+    if (isInitialNav.current) {
+      isInitialNav.current = false;
+      history.replaceState(null, "", url);
+    } else {
+      history.pushState(null, "", url);
+    }
+    setLocationPath(url);
+    setPreviewFile(null);
+  }, []);
+
+  // Handle browser back/forward
+  useEffect(() => {
+    const onPopState = () => {
+      setLocationPath(window.location.pathname);
+      setPreviewFile(null);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   const handleNewFolder = useCallback(() => {
     const name = prompt("New folder name:");
@@ -89,10 +145,7 @@ function FileBrowserInner({ initialVolume }: { initialVolume?: string }) {
         <div className="flex items-center gap-4">
         <VolumeSelector
           selectedVolume={volume}
-          onSelect={(id) => {
-            setVolume(id);
-            setCurrentPath("");
-          }}
+          onSelect={handleVolumeSelect}
         />
         <a
           href="/settings"
@@ -263,10 +316,10 @@ function FileBrowserInner({ initialVolume }: { initialVolume?: string }) {
   );
 }
 
-export default function FileBrowser({ initialVolume }: { initialVolume?: string }) {
+export default function FileBrowser() {
   return (
     <QueryClientProvider client={queryClient}>
-      <FileBrowserInner initialVolume={initialVolume} />
+      <FileBrowserInner />
     </QueryClientProvider>
   );
 }

@@ -1,8 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import FileBrowser from "../components/FileBrowser";
 ---
 
 <Layout title="MiniNAS">
-  <FileBrowser client:load />
+  <script is:inline>window.location.replace("/volumes");</script>
 </Layout>

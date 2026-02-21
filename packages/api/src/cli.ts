@@ -115,6 +115,7 @@ function discoverVolumes(): { name: string; path: string }[] {
 // --- Volume commands ---
 
 const volume = program.command("volume").description("Manage storage volumes");
+volume.action(() => volume.help());
 
 volume
   .command("list")
@@ -247,6 +248,7 @@ volume
 const access = volume
   .command("access")
   .description("Manage volume access");
+access.action(() => access.help());
 
 access
   .command("list")
@@ -303,6 +305,7 @@ access
 // --- User commands ---
 
 const user = program.command("user").description("Manage users");
+user.action(() => user.help());
 
 user
   .command("list")
@@ -344,6 +347,7 @@ user
 const invite = program
   .command("invite")
   .description("Manage invite tokens");
+invite.action(() => invite.help());
 
 invite
   .command("create")
@@ -407,5 +411,10 @@ invite
   });
 
 // --- Run ---
+
+// Show help and exit 0 when no subcommand is given
+program.action(() => {
+  program.help();
+});
 
 program.parse();

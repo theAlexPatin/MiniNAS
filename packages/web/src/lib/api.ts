@@ -1,5 +1,19 @@
 const API_BASE = "/api/v1";
 
+/** Encode each segment of a file path for use in URLs */
+function encodePath(filePath: string): string {
+  if (!filePath) return "";
+  return filePath.split("/").map(encodeURIComponent).join("/");
+}
+
+/** Build a /<prefix>/<volume>[/<path>] URL, avoiding trailing slashes */
+function volumeUrl(prefix: string, volume: string, filePath: string = ""): string {
+  const encoded = encodePath(filePath);
+  return encoded
+    ? `/${prefix}/${encodeURIComponent(volume)}/${encoded}`
+    : `/${prefix}/${encodeURIComponent(volume)}`;
+}
+
 class ApiError extends Error {
   constructor(
     public status: number,
@@ -65,11 +79,11 @@ export interface WebDAVToken {
 
 export const api = {
   listFiles(volume: string, path: string = ""): Promise<DirectoryListing> {
-    return request(`/files/${volume}/${path}`);
+    return request(volumeUrl("files", volume, path));
   },
 
   deleteFile(volume: string, path: string): Promise<{ ok: boolean }> {
-    return request(`/files/${volume}/${path}`, { method: "DELETE" });
+    return request(volumeUrl("files", volume, path), { method: "DELETE" });
   },
 
   moveFile(
@@ -77,7 +91,7 @@ export const api = {
     path: string,
     destination: string,
   ): Promise<{ ok: boolean }> {
-    return request(`/files/${volume}/${path}`, {
+    return request(volumeUrl("files", volume, path), {
       method: "PATCH",
       body: JSON.stringify({ destination }),
     });
@@ -88,7 +102,7 @@ export const api = {
     parentPath: string,
     name: string,
   ): Promise<{ ok: boolean }> {
-    return request(`/files/${volume}/${parentPath}`, {
+    return request(volumeUrl("files", volume, parentPath), {
       method: "POST",
       body: JSON.stringify({ name }),
     });
@@ -99,7 +113,7 @@ export const api = {
   },
 
   getDownloadUrl(volume: string, path: string): string {
-    return `${API_BASE}/download/${volume}/${path}`;
+    return `${API_BASE}${volumeUrl("download", volume, path)}`;
   },
 
   createWebDAVToken(

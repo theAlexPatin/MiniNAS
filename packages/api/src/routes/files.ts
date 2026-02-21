@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { Context } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import {
   getVolume,
@@ -12,11 +13,36 @@ import { MoveRequestSchema, MkdirRequestSchema } from "../types/api.js";
 
 const files = new Hono();
 
-// List directory or get file metadata
-files.get("/:volume/*", async (c) => {
+/**
+ * Extract the relative path after /:volumeId/ from c.req.path.
+ * c.req.param("*") doesn't work through nested route() calls in Hono,
+ * so we parse c.req.path directly (same approach as the WebDAV router).
+ */
+function getRelativePath(c: Context): string {
+  const volumeId = c.req.param("volumeId");
+  const encoded = encodeURIComponent(volumeId);
+  const sep = `/${encoded}/`;
+  const idx = c.req.path.lastIndexOf(sep);
+  if (idx < 0) return "";
+  const raw = c.req.path.substring(idx + sep.length);
+  return raw.split("/").map(decodeURIComponent).join("/");
+}
+
+// --- List directory or get file metadata ---
+
+files.get("/:volumeId", async (c) => {
   const session = c.get("session" as never) as { sub: string };
-  const volumeId = c.req.param("volume");
-  const relativePath = c.req.param("*") || "";
+  const volumeId = c.req.param("volumeId");
+  const volume = getVolume(volumeId, session.sub);
+
+  const entries = await listDirectory(volume, ".");
+  return c.json({ entries, path: "", volume: volumeId });
+});
+
+files.get("/:volumeId/*", async (c) => {
+  const session = c.get("session" as never) as { sub: string };
+  const volumeId = c.req.param("volumeId");
+  const relativePath = getRelativePath(c);
   const volume = getVolume(volumeId, session.sub);
 
   const info = await getFileInfo(volume, relativePath || ".");
@@ -27,11 +53,16 @@ files.get("/:volume/*", async (c) => {
   return c.json(info);
 });
 
-// Delete file or directory
-files.delete("/:volume/*", async (c) => {
+// --- Delete file or directory ---
+
+files.delete("/:volumeId", async (c) => {
+  return c.json({ error: "Cannot delete volume root" }, 403);
+});
+
+files.delete("/:volumeId/*", async (c) => {
   const session = c.get("session" as never) as { sub: string };
-  const volumeId = c.req.param("volume");
-  const relativePath = c.req.param("*") || "";
+  const volumeId = c.req.param("volumeId");
+  const relativePath = getRelativePath(c);
   const volume = getVolume(volumeId, session.sub);
 
   if (!relativePath) {
@@ -42,14 +73,19 @@ files.delete("/:volume/*", async (c) => {
   return c.json({ ok: true });
 });
 
-// Rename or move
+// --- Rename or move ---
+
+files.patch("/:volumeId", async (c) => {
+  return c.json({ error: "Cannot move volume root" }, 403);
+});
+
 files.patch(
-  "/:volume/*",
+  "/:volumeId/*",
   zValidator("json", MoveRequestSchema),
   async (c) => {
     const session = c.get("session" as never) as { sub: string };
-    const volumeId = c.req.param("volume");
-    const relativePath = c.req.param("*") || "";
+    const volumeId = c.req.param("volumeId");
+    const relativePath = getRelativePath(c);
     const volume = getVolume(volumeId, session.sub);
     const { destination } = c.req.valid("json");
 
@@ -62,18 +98,33 @@ files.patch(
   }
 );
 
-// Create directory
+// --- Create directory ---
+
 files.post(
-  "/:volume/*",
+  "/:volumeId",
   zValidator("json", MkdirRequestSchema),
   async (c) => {
     const session = c.get("session" as never) as { sub: string };
-    const volumeId = c.req.param("volume");
-    const parentPath = c.req.param("*") || "";
+    const volumeId = c.req.param("volumeId");
     const volume = getVolume(volumeId, session.sub);
     const { name } = c.req.valid("json");
 
-    await createDirectory(volume, parentPath || ".", name);
+    await createDirectory(volume, ".", name);
+    return c.json({ ok: true }, 201);
+  }
+);
+
+files.post(
+  "/:volumeId/*",
+  zValidator("json", MkdirRequestSchema),
+  async (c) => {
+    const session = c.get("session" as never) as { sub: string };
+    const volumeId = c.req.param("volumeId");
+    const relativePath = getRelativePath(c);
+    const volume = getVolume(volumeId, session.sub);
+    const { name } = c.req.valid("json");
+
+    await createDirectory(volume, relativePath || ".", name);
     return c.json({ ok: true }, 201);
   }
 );

@@ -57,6 +57,11 @@ You already own the hardware. A Mac Mini with a couple of USB SSDs is more stora
 - Path traversal prevention on every file operation
 - Rate limiting on authentication endpoints
 
+**WebDAV**
+- Mount volumes as network drives on any OS
+- App-specific tokens for secure access (no session cookies)
+- Works with macOS Finder, Windows Explorer, and Linux file managers
+
 **Works Everywhere**
 - Installable as a PWA on iOS and Android home screens
 - Designed for mobile and desktop
@@ -79,21 +84,17 @@ pnpm install
 
 ### Configure
 
-Copy the example config and edit it:
+Copy the example config and generate your secrets:
 
 ```bash
 cp .env.example .env
+
+# Generate secrets (paste the output into .env)
+openssl rand -hex 32  # → SESSION_SECRET
+openssl rand -hex 32  # → CLI_SECRET
 ```
 
-The most important setting is `VOLUMES` — tell MiniNAS where your drives are mounted:
-
-```env
-# Format: id:label:path — comma-separated for multiple drives
-VOLUMES=ssd1:SSD 1:/Volumes/SSD1,ssd2:SSD 2:/Volumes/SSD2
-
-# Generate a session secret
-SESSION_SECRET=$(openssl rand -hex 32)
-```
+At minimum, set `SESSION_SECRET` and `CLI_SECRET` in your `.env`. Volumes can be added later via the CLI.
 
 ### Run
 
@@ -105,13 +106,25 @@ This starts both the API server (port 3001) and the web frontend (port 4321). Op
 
 On first visit, you'll be prompted to register a Passkey — this is your login credential going forward. No username or password needed.
 
+### Add Volumes
+
+Once the server is running, add your drives via the CLI:
+
+```bash
+# Interactive — discovers mounted volumes in /Volumes
+pnpm mininas volume add
+
+# Explicit
+pnpm mininas volume add ssd1 "SSD 1" /Volumes/SSD1
+```
+
 ## Configuration
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `VOLUMES` | — | Comma-separated list of `id:label:path` entries |
 | `PORT` | `3001` | API server port |
 | `SESSION_SECRET` | — | Secret for signing session tokens (generate with `openssl rand -hex 32`) |
+| `CLI_SECRET` | — | Secret for authenticating CLI commands (generate with `openssl rand -hex 32`) |
 | `RP_ID` | `localhost` | WebAuthn Relying Party ID (your domain or `localhost`) |
 | `RP_ORIGIN` | `http://localhost:4321` | Frontend URL for WebAuthn verification |
 | `DB_PATH` | `~/.mininas/data/mininas.db` | SQLite database location |
@@ -163,26 +176,41 @@ pnpm --filter @mininas/api dev
 pnpm --filter @mininas/web dev
 ```
 
+### CLI
+
+MiniNAS includes a CLI for managing volumes, users, and invites. The CLI authenticates against the running API server using `CLI_SECRET`.
+
+```bash
+pnpm mininas volume list                  # List all volumes
+pnpm mininas volume add                   # Interactive volume setup
+pnpm mininas volume remove <id>           # Remove a volume
+pnpm mininas volume visibility <id> public|private
+
+pnpm mininas user list                    # List registered users
+pnpm mininas user delete <id>             # Delete a user
+
+pnpm mininas invite create <username>     # Create an invite token
+pnpm mininas invite list                  # List invites
+pnpm mininas invite delete <id>           # Delete an invite
+```
+
+The CLI reads `CLI_SECRET` from `.env` automatically. You can also pass `--token <secret>` or `--url <api-url>` to override.
+
 ### API Structure
 
 ```
 packages/api/src/
-  routes/        # Hono route handlers (files, download, upload, auth, search, share, preview, volumes)
+  cli.ts         # CLI entry point (volume, user, invite management)
+  routes/        # Hono route handlers (files, download, upload, auth, search, share, preview, volumes, webdav, cli)
   services/      # Business logic (filesystem, sessions, indexer, thumbnails, share)
   middleware/    # Auth verification, CORS, rate limiting
   db/            # SQLite connection + schema
   types/         # Zod schemas for request/response validation
 ```
 
-### Adding a Volume
+### WebDAV
 
-Volumes are configured via the `VOLUMES` environment variable. Each entry is `id:label:mountPath`:
-
-```env
-VOLUMES=photos:Photos:/Volumes/PhotosSSD,backup:Backups:/Volumes/BackupDrive
-```
-
-The API auto-detects disk space for each volume and the file indexer watches for changes in real time.
+MiniNAS exposes a WebDAV endpoint at `/dav/` for mounting volumes as network drives. Users can generate app-specific tokens from the web UI under account settings, then connect using their OS's built-in network drive support with Basic Auth (username + app token).
 
 ---
 

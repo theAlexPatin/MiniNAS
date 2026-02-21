@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
-    "lint": "turbo lint"
+    "lint": "turbo lint",
+    "mininas": "node packages/api/dist/cli.js",
+    "mn": "node packages/api/dist/cli.js"
   },
   "devDependencies": {
     "turbo": "^2.4.0",

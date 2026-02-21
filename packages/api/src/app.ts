@@ -41,23 +41,30 @@ app.route("/api/v1/auth", authApi);
 app.route("/api/v1/share", shareRoutes);
 
 // Protected API routes
-const api = new Hono();
-api.use("*", authMiddleware);
-api.route("/files", filesRoutes);
-api.route("/download", downloadRoutes);
-api.route("/volumes", volumesRoutes);
-api.route("/upload", uploadRoutes);
-api.route("/search", searchRoutes);
-api.route("/preview", previewRoutes);
-api.route("/webdav-tokens", webdavTokenRoutes);
+// Mount each sub-router directly on app with its own auth wrapper.
+// Hono's /* wildcard doesn't work through double-nested .route() calls,
+// so we use the same pattern as WebDAV: wrapper.use("*", auth) + wrapper.route("/", routes).
+function withAuth(routes: Hono): Hono {
+  const h = new Hono();
+  h.use("*", authMiddleware);
+  h.route("/", routes);
+  return h;
+}
+
+app.route("/api/v1/files", withAuth(filesRoutes));
+app.route("/api/v1/download", withAuth(downloadRoutes));
+app.route("/api/v1/volumes", withAuth(volumesRoutes));
+app.route("/api/v1/upload", withAuth(uploadRoutes));
+app.route("/api/v1/search", withAuth(searchRoutes));
+app.route("/api/v1/preview", withAuth(previewRoutes));
+app.route("/api/v1/webdav-tokens", withAuth(webdavTokenRoutes));
 
 // Admin routes (auth + admin required)
 const adminApi = new Hono();
+adminApi.use("*", authMiddleware);
 adminApi.use("*", adminMiddleware);
 adminApi.route("/", adminRoutes);
-api.route("/admin", adminApi);
-
-app.route("/api/v1", api);
+app.route("/api/v1/admin", adminApi);
 
 // CLI routes (CLI_SECRET token required)
 const cliApi = new Hono();

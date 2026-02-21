@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api, type VolumeInfo } from "../lib/api";
 import { HardDrive } from "lucide-react";
@@ -24,6 +25,15 @@ export default function VolumeSelector({
     queryFn: () => api.getVolumes(),
   });
 
+  const volumes = data?.volumes || [];
+
+  // Auto-select first volume when none is selected
+  useEffect(() => {
+    if (volumes.length > 0 && !selectedVolume) {
+      onSelect(volumes[0].id);
+    }
+  }, [volumes, selectedVolume, onSelect]);
+
   if (isLoading) {
     return (
       <div className="flex items-center gap-2 px-3 py-2 text-sm text-gray-400">
@@ -32,8 +42,6 @@ export default function VolumeSelector({
       </div>
     );
   }
-
-  const volumes = data?.volumes || [];
 
   if (volumes.length === 0) {
     return (

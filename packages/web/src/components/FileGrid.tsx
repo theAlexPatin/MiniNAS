@@ -77,7 +77,7 @@ export default function FileGrid({
           <div className="w-16 h-16 flex items-center justify-center rounded-lg bg-gray-100">
             {hasThumbnailSupport(entry) ? (
               <img
-                src={`/api/v1/preview/${volume}/${entry.path}?size=small`}
+                src={`/api/v1/preview/${encodeURIComponent(volume)}/${entry.path.split("/").map(encodeURIComponent).join("/")}?size=small`}
                 alt=""
                 className="w-16 h-16 object-cover rounded-lg"
                 onError={(e) => {

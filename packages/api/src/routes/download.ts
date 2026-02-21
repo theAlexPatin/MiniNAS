@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { Context } from "hono";
 import { stream } from "hono/streaming";
 import fs from "node:fs";
 import path from "node:path";
@@ -10,11 +11,30 @@ import { ZipDownloadSchema } from "../types/api.js";
 
 const download = new Hono();
 
+/**
+ * Extract the relative path after /:volumeId/ from c.req.path.
+ * c.req.param("*") doesn't work through nested route() calls in Hono.
+ */
+function getRelativePath(c: Context): string {
+  const volumeId = c.req.param("volumeId");
+  const encoded = encodeURIComponent(volumeId);
+  const sep = `/${encoded}/`;
+  const idx = c.req.path.lastIndexOf(sep);
+  if (idx < 0) return "";
+  const raw = c.req.path.substring(idx + sep.length);
+  return raw.split("/").map(decodeURIComponent).join("/");
+}
+
 // Stream file download with Range header support
-download.get("/:volume/*", async (c) => {
+// /:volumeId alone would be a directory — reject it
+download.get("/:volumeId", async (c) => {
+  return c.json({ error: "Cannot download a directory directly" }, 400);
+});
+
+download.get("/:volumeId/*", async (c) => {
   const session = c.get("session" as never) as { sub: string };
-  const volumeId = c.req.param("volume");
-  const relativePath = c.req.param("*") || "";
+  const volumeId = c.req.param("volumeId");
+  const relativePath = getRelativePath(c);
   const volume = getVolume(volumeId, session.sub);
   const filePath = resolveVolumePath(volume, relativePath);
 
