@@ -18,6 +18,21 @@ export function getDb(): Database.Database {
     const schemaPath = new URL("schema.sql", import.meta.url).pathname;
     const schema = fs.readFileSync(schemaPath, "utf-8");
     db.exec(schema);
+
+    // Column migrations — SQLite doesn't support ADD COLUMN IF NOT EXISTS
+    try {
+      db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'");
+    } catch {
+      // Column already exists
+    }
+    try {
+      db.exec("ALTER TABLE volumes ADD COLUMN visibility TEXT NOT NULL DEFAULT 'public'");
+    } catch {
+      // Column already exists
+    }
+
+    // Ensure existing admin user has the admin role
+    db.exec("UPDATE users SET role = 'admin' WHERE username = 'admin' AND role = 'user'");
   }
   return db;
 }

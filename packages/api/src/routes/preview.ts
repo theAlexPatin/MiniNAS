@@ -10,11 +10,12 @@ import {
 const preview = new Hono();
 
 preview.get("/:volume/*", async (c) => {
+  const session = c.get("session" as never) as { sub: string };
   const volumeId = c.req.param("volume");
   const relativePath = c.req.param("*") || "";
   const size = (c.req.query("size") || "small") as ThumbnailSize;
 
-  const volume = getVolume(volumeId);
+  const volume = getVolume(volumeId, session.sub);
   const filePath = resolveVolumePath(volume, relativePath);
   const mimeType = mime.lookup(filePath) || null;
 

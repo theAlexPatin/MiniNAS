@@ -3,13 +3,19 @@ import { app } from "./app.js";
 import { config } from "./config.js";
 import { getDb } from "./db/index.js";
 import { scanVolume, startWatchers } from "./services/indexer.js";
+import { getVolumes, migrateEnvVolumes } from "./services/volumes.js";
 
 // Initialize database
 getDb();
 
+// Migrate volumes from env var to DB (one-time)
+migrateEnvVolumes();
+
+const volumes = getVolumes();
+
 console.log(`MiniNAS API starting on port ${config.port}`);
 console.log(
-  `Configured volumes: ${config.volumes.map((v) => `${v.id} (${v.path})`).join(", ") || "none"}`
+  `Configured volumes: ${volumes.map((v) => `${v.id} (${v.path})`).join(", ") || "none"}`
 );
 
 serve({
@@ -21,7 +27,7 @@ console.log(`MiniNAS API ready at http://localhost:${config.port}`);
 
 // Start file indexing in background (don't block server startup)
 setTimeout(() => {
-  for (const volume of config.volumes) {
+  for (const volume of getVolumes()) {
     scanVolume(volume);
   }
   startWatchers();

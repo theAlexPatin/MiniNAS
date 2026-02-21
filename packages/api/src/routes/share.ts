@@ -87,7 +87,7 @@ share.post(
     const session = c.get("session" as never) as { sub: string };
     const body = c.req.valid("json");
 
-    const volume = getVolume(body.volume);
+    const volume = getVolume(body.volume, session.sub);
     resolveVolumePath(volume, body.path);
 
     const link = createShareLink({

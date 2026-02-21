@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { config } from "../config.js";
 import { getVolume, resolveVolumePath } from "../services/filesystem.js";
+import { canAccessVolume } from "../services/access.js";
 
 // Ensure staging directory exists
 fs.mkdirSync(config.uploadStagingDir, { recursive: true });
@@ -55,6 +56,24 @@ const tusServer = new Server({
 });
 
 const upload = new Hono();
+
+// Validate volume access on upload creation (POST)
+upload.post("/*", async (c, next) => {
+  const session = c.get("session" as never) as { sub: string };
+  const uploadMetadata = c.req.header("upload-metadata");
+  if (uploadMetadata) {
+    // TUS metadata is comma-separated key-value pairs, values are base64-encoded
+    const parts = uploadMetadata.split(",").map((p) => p.trim());
+    for (const part of parts) {
+      const [key, value] = part.split(" ");
+      if (key === "volume" && value) {
+        const volumeId = Buffer.from(value, "base64").toString("utf-8");
+        getVolume(volumeId, session.sub); // throws 403 if denied
+      }
+    }
+  }
+  await next();
+});
 
 // Bridge all tus methods to the tus server using raw Node.js req/res
 upload.all("/*", async (c) => {

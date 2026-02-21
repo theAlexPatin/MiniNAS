@@ -14,9 +14,10 @@ const files = new Hono();
 
 // List directory or get file metadata
 files.get("/:volume/*", async (c) => {
+  const session = c.get("session" as never) as { sub: string };
   const volumeId = c.req.param("volume");
   const relativePath = c.req.param("*") || "";
-  const volume = getVolume(volumeId);
+  const volume = getVolume(volumeId, session.sub);
 
   const info = await getFileInfo(volume, relativePath || ".");
   if (info.isDirectory) {
@@ -28,9 +29,10 @@ files.get("/:volume/*", async (c) => {
 
 // Delete file or directory
 files.delete("/:volume/*", async (c) => {
+  const session = c.get("session" as never) as { sub: string };
   const volumeId = c.req.param("volume");
   const relativePath = c.req.param("*") || "";
-  const volume = getVolume(volumeId);
+  const volume = getVolume(volumeId, session.sub);
 
   if (!relativePath) {
     return c.json({ error: "Cannot delete volume root" }, 403);
@@ -45,9 +47,10 @@ files.patch(
   "/:volume/*",
   zValidator("json", MoveRequestSchema),
   async (c) => {
+    const session = c.get("session" as never) as { sub: string };
     const volumeId = c.req.param("volume");
     const relativePath = c.req.param("*") || "";
-    const volume = getVolume(volumeId);
+    const volume = getVolume(volumeId, session.sub);
     const { destination } = c.req.valid("json");
 
     if (!relativePath) {
@@ -64,9 +67,10 @@ files.post(
   "/:volume/*",
   zValidator("json", MkdirRequestSchema),
   async (c) => {
+    const session = c.get("session" as never) as { sub: string };
     const volumeId = c.req.param("volume");
     const parentPath = c.req.param("*") || "";
-    const volume = getVolume(volumeId);
+    const volume = getVolume(volumeId, session.sub);
     const { name } = c.req.valid("json");
 
     await createDirectory(volume, parentPath || ".", name);

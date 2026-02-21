@@ -4,7 +4,8 @@ import path from "node:path";
 import { watch } from "chokidar";
 import mime from "mime-types";
 import { getDb } from "../db/index.js";
-import { config, type VolumeConfig } from "../config.js";
+import type { VolumeConfig } from "../config.js";
+import { getVolumes } from "./volumes.js";
 
 const watchers: ReturnType<typeof watch>[] = [];
 
@@ -89,7 +90,7 @@ export async function scanVolume(volume: VolumeConfig) {
 }
 
 export function startWatchers() {
-  for (const volume of config.volumes) {
+  for (const volume of getVolumes()) {
     try {
       fs.accessSync(volume.path);
     } catch {
@@ -143,4 +144,17 @@ export function searchFiles(query: string, volumeId?: string) {
       "SELECT * FROM file_index WHERE name LIKE ? ORDER BY is_directory DESC, name ASC LIMIT 50"
     )
     .all(searchTerm);
+}
+
+export function searchFilesInVolumes(query: string, volumeIds: string[]) {
+  const db = getDb();
+  if (volumeIds.length === 0) return [];
+
+  const searchTerm = `%${query}%`;
+  const placeholders = volumeIds.map(() => "?").join(",");
+  return db
+    .prepare(
+      `SELECT * FROM file_index WHERE volume IN (${placeholders}) AND name LIKE ? ORDER BY is_directory DESC, name ASC LIMIT 50`
+    )
+    .all(...volumeIds, searchTerm);
 }

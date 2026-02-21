@@ -3,6 +3,7 @@ import { logger } from "hono/logger";
 import { HTTPException } from "hono/http-exception";
 import { corsMiddleware } from "./middleware/cors.js";
 import { authMiddleware, optionalAuthMiddleware } from "./middleware/auth.js";
+import { adminMiddleware } from "./middleware/admin.js";
 import { authRateLimit } from "./middleware/rate-limit.js";
 import authRoutes from "./routes/auth.js";
 import filesRoutes from "./routes/files.js";
@@ -12,6 +13,7 @@ import uploadRoutes, { cleanupStagingDir } from "./routes/upload.js";
 import searchRoutes from "./routes/search.js";
 import previewRoutes from "./routes/preview.js";
 import shareRoutes from "./routes/share.js";
+import adminRoutes from "./routes/admin.js";
 
 const app = new Hono();
 
@@ -42,6 +44,12 @@ api.route("/volumes", volumesRoutes);
 api.route("/upload", uploadRoutes);
 api.route("/search", searchRoutes);
 api.route("/preview", previewRoutes);
+
+// Admin routes (auth + admin required)
+const adminApi = new Hono();
+adminApi.use("*", adminMiddleware);
+adminApi.route("/", adminRoutes);
+api.route("/admin", adminApi);
 
 app.route("/api/v1", api);
 

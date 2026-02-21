@@ -2,13 +2,18 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { HTTPException } from "hono/http-exception";
 import mime from "mime-types";
-import { config, type VolumeConfig } from "../config.js";
+import type { VolumeConfig } from "../config.js";
+import { getVolumeById } from "./volumes.js";
+import { canAccessVolume } from "./access.js";
 import type { FileEntry } from "../types/api.js";
 
-export function getVolume(volumeId: string): VolumeConfig {
-  const volume = config.volumes.find((v) => v.id === volumeId);
+export function getVolume(volumeId: string, userId?: string): VolumeConfig {
+  const volume = getVolumeById(volumeId);
   if (!volume) {
     throw new HTTPException(404, { message: `Volume '${volumeId}' not found` });
+  }
+  if (userId && !canAccessVolume(userId, volumeId)) {
+    throw new HTTPException(403, { message: "Access denied" });
   }
   return volume;
 }

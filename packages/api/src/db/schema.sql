@@ -49,6 +49,13 @@ CREATE INDEX IF NOT EXISTS idx_file_index_volume ON file_index(volume);
 CREATE INDEX IF NOT EXISTS idx_file_index_name ON file_index(name);
 CREATE INDEX IF NOT EXISTS idx_file_index_extension ON file_index(extension);
 
+CREATE TABLE IF NOT EXISTS volumes (
+  id TEXT PRIMARY KEY,
+  label TEXT NOT NULL,
+  path TEXT NOT NULL UNIQUE,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS share_links (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -58,5 +65,22 @@ CREATE TABLE IF NOT EXISTS share_links (
   max_downloads INTEGER,
   download_count INTEGER NOT NULL DEFAULT 0,
   expires_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS volume_access (
+  volume_id TEXT NOT NULL REFERENCES volumes(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (volume_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS invite_tokens (
+  id TEXT PRIMARY KEY,
+  created_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  username TEXT NOT NULL,
+  used_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+  used_at TEXT,
+  expires_at TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );

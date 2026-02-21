@@ -13,6 +13,7 @@ import type {
 import { getDb } from "../db/index.js";
 import { config } from "../config.js";
 import { createSession, revokeSession } from "../services/sessions.js";
+import { validateInvite, markInviteUsed } from "../services/invites.js";
 
 const auth = new Hono();
 
@@ -135,11 +136,10 @@ auth.post("/registration/verify", async (c) => {
 
     const { credential, credentialDeviceType } = verification.registrationInfo;
 
-    // Create user
-    db.prepare("INSERT INTO users (id, username) VALUES (?, ?)").run(
-      pendingUserId,
-      "admin"
-    );
+    // Create admin user
+    db.prepare(
+      "INSERT INTO users (id, username, role) VALUES (?, ?, 'admin')"
+    ).run(pendingUserId, "admin");
 
     // Store credential
     db.prepare(
@@ -167,6 +167,146 @@ auth.post("/registration/verify", async (c) => {
     return c.json({ verified: true });
   } catch (err) {
     console.error("Registration error:", err);
+    return c.json({ error: "Registration failed" }, 400);
+  }
+});
+
+// Invite registration options — validate invite and generate WebAuthn registration challenge
+auth.get("/invite/:token/options", async (c) => {
+  const db = getDb();
+  const token = c.req.param("token");
+
+  const result = validateInvite(token);
+  if (!result.valid || !result.invite) {
+    return c.json({ error: result.error }, 400);
+  }
+
+  const userId = nanoid();
+  const options = await generateRegistrationOptions({
+    rpName,
+    rpID,
+    userName: result.invite.username,
+    userDisplayName: result.invite.username,
+    attestationType: "none",
+    authenticatorSelection: {
+      residentKey: "preferred",
+      userVerification: "preferred",
+    },
+  });
+
+  const challengeId = nanoid();
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+  db.prepare(
+    "INSERT INTO challenges (id, challenge, user_id, type, expires_at) VALUES (?, ?, ?, 'registration', ?)"
+  ).run(challengeId, options.challenge, userId, expiresAt.toISOString());
+
+  setCookie(c, "challenge_id", challengeId, {
+    httpOnly: true,
+    secure: rpID !== "localhost",
+    sameSite: "Strict",
+    maxAge: 300,
+    path: "/",
+  });
+
+  setCookie(c, "pending_user_id", userId, {
+    httpOnly: true,
+    secure: rpID !== "localhost",
+    sameSite: "Strict",
+    maxAge: 300,
+    path: "/",
+  });
+
+  setCookie(c, "invite_token", token, {
+    httpOnly: true,
+    secure: rpID !== "localhost",
+    sameSite: "Strict",
+    maxAge: 300,
+    path: "/",
+  });
+
+  return c.json(options);
+});
+
+// Verify invite registration — create user with role='user'
+auth.post("/invite/verify", async (c) => {
+  const db = getDb();
+  const body = await c.req.json();
+  const challengeId = getCookie(c, "challenge_id");
+  const pendingUserId = getCookie(c, "pending_user_id");
+  const inviteToken = getCookie(c, "invite_token");
+
+  if (!challengeId || !pendingUserId || !inviteToken) {
+    return c.json({ error: "No pending challenge" }, 400);
+  }
+
+  const inviteResult = validateInvite(inviteToken);
+  if (!inviteResult.valid || !inviteResult.invite) {
+    return c.json({ error: inviteResult.error }, 400);
+  }
+
+  const challenge = db
+    .prepare(
+      "SELECT * FROM challenges WHERE id = ? AND type = 'registration' AND expires_at > datetime('now')"
+    )
+    .get(challengeId) as DbChallenge | undefined;
+
+  if (!challenge) {
+    return c.json({ error: "Challenge expired or not found" }, 400);
+  }
+
+  db.prepare("DELETE FROM challenges WHERE id = ?").run(challengeId);
+  deleteCookie(c, "challenge_id", { path: "/" });
+  deleteCookie(c, "pending_user_id", { path: "/" });
+  deleteCookie(c, "invite_token", { path: "/" });
+
+  try {
+    const verification = await verifyRegistrationResponse({
+      response: body,
+      expectedChallenge: challenge.challenge,
+      expectedOrigin: origin,
+      expectedRPID: rpID,
+    });
+
+    if (!verification.verified || !verification.registrationInfo) {
+      return c.json({ error: "Verification failed" }, 400);
+    }
+
+    const { credential, credentialDeviceType } = verification.registrationInfo;
+
+    // Create user with role='user'
+    db.prepare(
+      "INSERT INTO users (id, username, role) VALUES (?, ?, 'user')"
+    ).run(pendingUserId, inviteResult.invite.username);
+
+    // Store credential
+    db.prepare(
+      "INSERT INTO credentials (id, user_id, public_key, counter, device_type, transports) VALUES (?, ?, ?, ?, ?, ?)"
+    ).run(
+      credential.id,
+      pendingUserId,
+      Buffer.from(credential.publicKey),
+      credential.counter,
+      credentialDeviceType,
+      JSON.stringify(credential.transports || [])
+    );
+
+    // Mark invite as used
+    markInviteUsed(inviteToken, pendingUserId);
+
+    // Create session
+    const token = await createSession(pendingUserId);
+
+    setCookie(c, "session", token, {
+      httpOnly: true,
+      secure: rpID !== "localhost",
+      sameSite: "Strict",
+      maxAge: 7 * 24 * 60 * 60,
+      path: "/",
+    });
+
+    return c.json({ verified: true });
+  } catch (err) {
+    console.error("Invite registration error:", err);
     return c.json({ error: "Registration failed" }, 400);
   }
 });
@@ -297,13 +437,15 @@ auth.get("/session", async (c) => {
   }
 
   const db = getDb();
-  const user = db.prepare("SELECT id, username FROM users WHERE id = ?").get(session.sub) as
-    | { id: string; username: string }
+  const user = db
+    .prepare("SELECT id, username, role FROM users WHERE id = ?")
+    .get(session.sub) as
+    | { id: string; username: string; role: string }
     | undefined;
 
   return c.json({
     authenticated: true,
-    user: user ? { id: user.id, username: user.username } : null,
+    user: user ? { id: user.id, username: user.username, role: user.role } : null,
   });
 });
 

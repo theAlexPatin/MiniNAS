@@ -12,9 +12,10 @@ const download = new Hono();
 
 // Stream file download with Range header support
 download.get("/:volume/*", async (c) => {
+  const session = c.get("session" as never) as { sub: string };
   const volumeId = c.req.param("volume");
   const relativePath = c.req.param("*") || "";
-  const volume = getVolume(volumeId);
+  const volume = getVolume(volumeId, session.sub);
   const filePath = resolveVolumePath(volume, relativePath);
 
   const stat = fs.statSync(filePath);
@@ -77,8 +78,9 @@ download.post(
   "/zip",
   zValidator("json", ZipDownloadSchema),
   async (c) => {
+    const session = c.get("session" as never) as { sub: string };
     const { volume: volumeId, paths } = c.req.valid("json");
-    const volume = getVolume(volumeId);
+    const volume = getVolume(volumeId, session.sub);
 
     c.header("Content-Type", "application/zip");
     c.header(

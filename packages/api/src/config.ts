@@ -12,17 +12,8 @@ export interface VolumeConfig {
   path: string;
 }
 
-function parseVolumes(raw: string | undefined): VolumeConfig[] {
-  if (!raw) return [];
-  return raw.split(",").map((entry) => {
-    const [id, label, ...pathParts] = entry.trim().split(":");
-    return { id, label, path: pathParts.join(":") };
-  });
-}
-
 export const config = {
   port: parseInt(process.env.PORT || "3001", 10),
-  volumes: parseVolumes(process.env.VOLUMES),
   sessionSecret: process.env.SESSION_SECRET || "change-me",
   rp: {
     id: process.env.RP_ID || "localhost",
