@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 
 function formatBytes(bytes: number): string {
-  if (bytes === 0) return "—";
+  if (bytes === 0) return "\u2014";
   const k = 1024;
   const sizes = ["B", "KB", "MB", "GB", "TB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -33,16 +33,16 @@ function formatDate(iso: string): string {
 }
 
 function getFileIcon(entry: FileEntry) {
-  if (entry.isDirectory) return <Folder size={20} className="text-brand-400" />;
+  if (entry.isDirectory) return <Folder size={20} className="text-blue-500" />;
   const mime = entry.mimeType || "";
-  if (mime.startsWith("image/")) return <FileImage size={20} className="text-purple-400" />;
-  if (mime.startsWith("video/")) return <FileVideo size={20} className="text-pink-400" />;
-  if (mime.startsWith("audio/")) return <FileAudio size={20} className="text-green-400" />;
-  if (mime.startsWith("text/")) return <FileText size={20} className="text-yellow-400" />;
+  if (mime.startsWith("image/")) return <FileImage size={20} className="text-purple-500" />;
+  if (mime.startsWith("video/")) return <FileVideo size={20} className="text-pink-500" />;
+  if (mime.startsWith("audio/")) return <FileAudio size={20} className="text-green-500" />;
+  if (mime.startsWith("text/")) return <FileText size={20} className="text-amber-500" />;
   if (mime.includes("zip") || mime.includes("tar") || mime.includes("gzip") || mime.includes("rar"))
-    return <FileArchive size={20} className="text-orange-400" />;
+    return <FileArchive size={20} className="text-orange-500" />;
   if (mime.includes("json") || mime.includes("javascript") || mime.includes("xml"))
-    return <FileCode size={20} className="text-cyan-400" />;
+    return <FileCode size={20} className="text-cyan-600" />;
   return <File size={20} className="text-gray-400" />;
 }
 
@@ -65,7 +65,7 @@ export default function FileList({
 }: FileListProps) {
   if (entries.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-gray-500">
+      <div className="flex flex-col items-center justify-center py-20 text-gray-400">
         <Folder size={48} className="mb-3 opacity-50" />
         <p>This folder is empty</p>
       </div>
@@ -76,7 +76,7 @@ export default function FileList({
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-gray-800 text-gray-400 text-left">
+          <tr className="border-b border-gray-200 text-gray-500 text-left">
             <th className="pb-2 pl-3 font-medium">Name</th>
             <th className="pb-2 font-medium w-28">Size</th>
             <th className="pb-2 font-medium w-44">Modified</th>
@@ -87,7 +87,7 @@ export default function FileList({
           {entries.map((entry) => (
             <tr
               key={entry.path}
-              className="border-b border-gray-800/50 hover:bg-gray-800/50 cursor-pointer group"
+              className="border-b border-gray-100 hover:bg-blue-50/60 cursor-pointer group transition-colors"
               onClick={() => {
                 if (entry.isDirectory) {
                   onNavigate(entry.path);
@@ -96,23 +96,23 @@ export default function FileList({
                 }
               }}
             >
-              <td className="py-2 pl-3">
+              <td className="py-2.5 pl-3">
                 <div className="flex items-center gap-2.5">
                   {getFileIcon(entry)}
-                  <span className="truncate">{entry.name}</span>
+                  <span className="truncate text-gray-900">{entry.name}</span>
                 </div>
               </td>
-              <td className="py-2 text-gray-400">
-                {entry.isDirectory ? "—" : formatBytes(entry.size)}
+              <td className="py-2.5 text-gray-500">
+                {entry.isDirectory ? "\u2014" : formatBytes(entry.size)}
               </td>
-              <td className="py-2 text-gray-400">{formatDate(entry.modifiedAt)}</td>
-              <td className="py-2 pr-3">
+              <td className="py-2.5 text-gray-500">{formatDate(entry.modifiedAt)}</td>
+              <td className="py-2.5 pr-3">
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   {!entry.isDirectory && (
                     <a
                       href={api.getDownloadUrl(volume, entry.path)}
                       onClick={(e) => e.stopPropagation()}
-                      className="p-1 rounded hover:bg-gray-700 text-gray-400 hover:text-gray-200"
+                      className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-700 transition-colors"
                       title="Download"
                     >
                       <Download size={16} />
@@ -124,7 +124,7 @@ export default function FileList({
                         e.stopPropagation();
                         onShare(entry);
                       }}
-                      className="p-1 rounded hover:bg-gray-700 text-gray-400 hover:text-brand-400"
+                      className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-blue-600 transition-colors"
                       title="Share"
                     >
                       <Link2 size={16} />
@@ -137,7 +137,7 @@ export default function FileList({
                         onDelete(entry.path);
                       }
                     }}
-                    className="p-1 rounded hover:bg-gray-700 text-gray-400 hover:text-red-400"
+                    className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
                     title="Delete"
                   >
                     <Trash2 size={16} />

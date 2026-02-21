@@ -56,42 +56,42 @@ export default function ShareDialog({ file, volume, onClose }: ShareDialogProps)
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className="bg-gray-900 border border-gray-800 rounded-lg max-w-md w-full p-6"
+        className="bg-white border border-gray-200 rounded-lg max-w-md w-full p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium">Share File</h3>
-          <button onClick={onClose} className="p-1 hover:bg-gray-800 rounded">
-            <X size={18} />
+          <h3 className="text-lg font-medium text-gray-900">Share File</h3>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded transition-colors">
+            <X size={18} className="text-gray-400" />
           </button>
         </div>
 
-        <p className="text-sm text-gray-400 mb-4 truncate">
+        <p className="text-sm text-gray-500 mb-4 truncate">
           {file.name}
         </p>
 
         {shareUrl ? (
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Share URL</label>
+            <label className="block text-sm text-gray-500 mb-1">Share URL</label>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={shareUrl}
                 readOnly
-                className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-sm"
+                className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-900"
               />
               <button
                 onClick={handleCopy}
-                className="flex items-center gap-1.5 px-3 py-2 bg-brand-600 hover:bg-brand-500 rounded-md text-sm font-medium shrink-0"
+                className="flex items-center gap-1.5 px-3 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-md text-sm font-medium shrink-0 transition-colors"
               >
                 {copied ? <Check size={16} /> : <Copy size={16} />}
                 {copied ? "Copied" : "Copy"}
               </button>
             </div>
             {password && (
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-gray-400 mt-2">
                 Password: {password}
               </p>
             )}
@@ -99,7 +99,7 @@ export default function ShareDialog({ file, volume, onClose }: ShareDialogProps)
         ) : (
           <div className="space-y-3">
             <div>
-              <label className="block text-sm text-gray-400 mb-1">
+              <label className="block text-sm text-gray-500 mb-1">
                 Password (optional)
               </label>
               <input
@@ -107,11 +107,11 @@ export default function ShareDialog({ file, volume, onClose }: ShareDialogProps)
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Leave empty for no password"
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-sm"
+                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">
+              <label className="block text-sm text-gray-500 mb-1">
                 Max downloads (optional)
               </label>
               <input
@@ -120,17 +120,17 @@ export default function ShareDialog({ file, volume, onClose }: ShareDialogProps)
                 onChange={(e) => setMaxDownloads(e.target.value)}
                 placeholder="Unlimited"
                 min="1"
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-sm"
+                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">
+              <label className="block text-sm text-gray-500 mb-1">
                 Expires in (hours)
               </label>
               <select
                 value={expiresIn}
                 onChange={(e) => setExpiresIn(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-sm"
+                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="1">1 hour</option>
                 <option value="24">24 hours</option>
@@ -141,13 +141,13 @@ export default function ShareDialog({ file, volume, onClose }: ShareDialogProps)
             </div>
 
             {error && (
-              <p className="text-sm text-red-400">{error}</p>
+              <p className="text-sm text-red-500">{error}</p>
             )}
 
             <button
               onClick={handleCreate}
               disabled={creating}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-500 disabled:opacity-50 rounded-md font-medium text-sm"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white rounded-md font-medium text-sm transition-colors"
             >
               {creating ? (
                 <Loader2 size={16} className="animate-spin" />

@@ -28,15 +28,15 @@ export default function PasskeyLogin() {
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <img src="/logo.png" alt="MiniNAS" className="w-24 h-24 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold mb-2">MiniNAS</h1>
-          <p className="text-gray-400">Sign in with your passkey</p>
+          <h1 className="text-2xl font-bold mb-2 text-gray-900">MiniNAS</h1>
+          <p className="text-gray-500">Sign in with your passkey</p>
         </div>
 
-        <div className="bg-brand-900/50 border border-brand-800/50 rounded-lg p-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
           <button
             onClick={handleLogin}
             disabled={status === "loading"}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-brand-600 hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-brand-600 hover:bg-brand-700 text-white disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
           >
             {status === "loading" ? (
               <Loader2 size={20} className="animate-spin" />
@@ -47,7 +47,7 @@ export default function PasskeyLogin() {
           </button>
 
           {error && (
-            <p className="mt-3 text-sm text-red-400 text-center">{error}</p>
+            <p className="mt-3 text-sm text-red-500 text-center">{error}</p>
           )}
         </div>
       </div>

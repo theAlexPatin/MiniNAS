@@ -84,7 +84,7 @@ function FileBrowserInner({ initialVolume }: { initialVolume?: string }) {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2.5">
           <img src="/logo.png" alt="MiniNAS" className="w-8 h-8" />
-          <h1 className="text-xl font-semibold">MiniNAS</h1>
+          <h1 className="text-xl font-semibold text-gray-900">MiniNAS</h1>
         </div>
         <div className="flex items-center gap-4">
         <VolumeSelector
@@ -96,7 +96,7 @@ function FileBrowserInner({ initialVolume }: { initialVolume?: string }) {
         />
         <button
           onClick={logout}
-          className="p-1.5 rounded-md hover:bg-gray-800 text-gray-400 hover:text-gray-200"
+          className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
           title="Sign out"
         >
           <LogOut size={18} />
@@ -117,16 +117,16 @@ function FileBrowserInner({ initialVolume }: { initialVolume?: string }) {
         <nav className="flex items-center gap-1 text-sm overflow-x-auto">
           <button
             onClick={() => navigateTo("")}
-            className="flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-800 text-gray-300 hover:text-white shrink-0"
+            className="flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors shrink-0"
           >
             <Home size={14} />
           </button>
           {breadcrumbs.map((crumb) => (
             <div key={crumb.path} className="flex items-center gap-1 shrink-0">
-              <ChevronRight size={14} className="text-gray-600" />
+              <ChevronRight size={14} className="text-gray-300" />
               <button
                 onClick={() => navigateTo(crumb.path)}
-                className="px-2 py-1 rounded hover:bg-gray-800 text-gray-300 hover:text-white"
+                className="px-2 py-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors"
               >
                 {crumb.label}
               </button>
@@ -141,8 +141,8 @@ function FileBrowserInner({ initialVolume }: { initialVolume?: string }) {
               onClick={() => setShowUploadZone(!showUploadZone)}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-colors ${
                 showUploadZone
-                  ? "bg-brand-600 hover:bg-brand-500 text-white"
-                  : "bg-gray-800 hover:bg-gray-700 text-gray-300"
+                  ? "bg-brand-600 hover:bg-brand-700 text-white"
+                  : "bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 shadow-sm"
               }`}
               title="Upload"
             >
@@ -152,23 +152,23 @@ function FileBrowserInner({ initialVolume }: { initialVolume?: string }) {
           )}
           <button
             onClick={handleNewFolder}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-gray-800 hover:bg-gray-700 text-gray-300"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 shadow-sm transition-colors"
             title="New Folder"
           >
             <FolderPlus size={16} />
             <span className="hidden sm:inline">New Folder</span>
           </button>
-          <div className="flex items-center border border-gray-700 rounded-md overflow-hidden">
+          <div className="flex items-center border border-gray-200 rounded-md overflow-hidden bg-white shadow-sm">
             <button
               onClick={() => setViewMode("list")}
-              className={`p-1.5 ${viewMode === "list" ? "bg-gray-700 text-white" : "text-gray-400 hover:text-gray-200"}`}
+              className={`p-1.5 transition-colors ${viewMode === "list" ? "bg-gray-100 text-gray-900" : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"}`}
               title="List view"
             >
               <List size={16} />
             </button>
             <button
               onClick={() => setViewMode("grid")}
-              className={`p-1.5 ${viewMode === "grid" ? "bg-gray-700 text-white" : "text-gray-400 hover:text-gray-200"}`}
+              className={`p-1.5 transition-colors ${viewMode === "grid" ? "bg-gray-100 text-gray-900" : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"}`}
               title="Grid view"
             >
               <LayoutGrid size={16} />
@@ -176,7 +176,7 @@ function FileBrowserInner({ initialVolume }: { initialVolume?: string }) {
           </div>
           <button
             onClick={() => refetch()}
-            className="p-1.5 rounded-md hover:bg-gray-800 text-gray-400 hover:text-gray-200"
+            className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
             title="Refresh"
           >
             <RefreshCw size={16} />
@@ -198,7 +198,7 @@ function FileBrowserInner({ initialVolume }: { initialVolume?: string }) {
 
       {/* Content */}
       {!volume ? (
-        <div className="text-center py-20 text-gray-500">
+        <div className="text-center py-20 text-gray-400">
           Select a volume to get started
         </div>
       ) : isLoading ? (
@@ -206,7 +206,7 @@ function FileBrowserInner({ initialVolume }: { initialVolume?: string }) {
           <Loader2 size={24} className="animate-spin" />
         </div>
       ) : error ? (
-        <div className="text-center py-20 text-red-400">
+        <div className="text-center py-20 text-red-500">
           Error loading files: {(error as Error).message}
         </div>
       ) : viewMode === "list" ? (

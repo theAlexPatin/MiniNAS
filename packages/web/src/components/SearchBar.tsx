@@ -35,7 +35,7 @@ export default function SearchBar({ volume, onNavigate }: SearchBarProps) {
       <div className="relative">
         <Search
           size={16}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
         />
         <input
           type="text"
@@ -46,7 +46,7 @@ export default function SearchBar({ volume, onNavigate }: SearchBarProps) {
           }}
           onFocus={() => query && setIsOpen(true)}
           placeholder="Search files..."
-          className="w-full pl-9 pr-8 py-1.5 bg-gray-800 border border-gray-700 rounded-md text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+          className="w-full pl-9 pr-8 py-1.5 bg-white border border-gray-200 rounded-md text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
         />
         {query && (
           <button
@@ -54,7 +54,7 @@ export default function SearchBar({ volume, onNavigate }: SearchBarProps) {
               setQuery("");
               setIsOpen(false);
             }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
           >
             <X size={14} />
           </button>
@@ -63,11 +63,11 @@ export default function SearchBar({ volume, onNavigate }: SearchBarProps) {
 
       {/* Dropdown results */}
       {isOpen && debouncedQuery && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-gray-900 border border-gray-800 rounded-md shadow-xl z-50 max-h-80 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 max-h-80 overflow-y-auto">
           {isLoading ? (
             <div className="px-4 py-3 text-sm text-gray-400">Searching...</div>
           ) : !data?.results.length ? (
-            <div className="px-4 py-3 text-sm text-gray-500">No results</div>
+            <div className="px-4 py-3 text-sm text-gray-400">No results</div>
           ) : (
             data.results.map((result) => {
               const isDir = result.is_directory === 1;
@@ -83,16 +83,16 @@ export default function SearchBar({ volume, onNavigate }: SearchBarProps) {
                     setIsOpen(false);
                     setQuery("");
                   }}
-                  className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-gray-800 text-left"
+                  className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 text-left transition-colors"
                 >
                   {isDir ? (
-                    <Folder size={16} className="text-brand-400 shrink-0" />
+                    <Folder size={16} className="text-blue-500 shrink-0" />
                   ) : (
                     <File size={16} className="text-gray-400 shrink-0" />
                   )}
                   <div className="min-w-0">
-                    <p className="text-sm truncate">{result.name}</p>
-                    <p className="text-xs text-gray-500 truncate">
+                    <p className="text-sm truncate text-gray-900">{result.name}</p>
+                    <p className="text-xs text-gray-400 truncate">
                       {result.path}
                     </p>
                   </div>

@@ -51,13 +51,13 @@ export default function ContextMenu({
   return (
     <div
       ref={ref}
-      className="fixed bg-gray-900 border border-gray-700 rounded-lg shadow-xl py-1 z-50 min-w-[180px]"
+      className="fixed bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 min-w-[180px]"
       style={{ left: adjustedX, top: adjustedY }}
     >
       {!file.isDirectory && (
         <button
           onClick={() => { onPreview(); onClose(); }}
-          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-gray-800 text-left"
+          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-gray-50 text-left text-gray-700 transition-colors"
         >
           <Eye size={16} className="text-gray-400" />
           Preview
@@ -66,7 +66,7 @@ export default function ContextMenu({
       {!file.isDirectory && (
         <button
           onClick={() => { onDownload(); onClose(); }}
-          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-gray-800 text-left"
+          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-gray-50 text-left text-gray-700 transition-colors"
         >
           <Download size={16} className="text-gray-400" />
           Download
@@ -75,7 +75,7 @@ export default function ContextMenu({
       {!file.isDirectory && (
         <button
           onClick={() => { onShare(); onClose(); }}
-          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-gray-800 text-left"
+          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-gray-50 text-left text-gray-700 transition-colors"
         >
           <Link2 size={16} className="text-gray-400" />
           Share
@@ -83,15 +83,15 @@ export default function ContextMenu({
       )}
       <button
         onClick={() => { onRename(); onClose(); }}
-        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-gray-800 text-left"
+        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-gray-50 text-left text-gray-700 transition-colors"
       >
         <Pencil size={16} className="text-gray-400" />
         Rename
       </button>
-      <div className="border-t border-gray-800 my-1" />
+      <div className="border-t border-gray-100 my-1" />
       <button
         onClick={() => { onDelete(); onClose(); }}
-        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-gray-800 text-left text-red-400"
+        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-red-50 text-left text-red-500 transition-colors"
       >
         <Trash2 size={16} />
         Delete
