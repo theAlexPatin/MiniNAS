@@ -42,7 +42,8 @@ export function resolveVolumePath(
 
 export async function listDirectory(
   volume: VolumeConfig,
-  relativePath: string
+  relativePath: string,
+  opts?: { includeDotfiles?: boolean }
 ): Promise<FileEntry[]> {
   const dirPath = resolveVolumePath(volume, relativePath);
 
@@ -55,8 +56,8 @@ export async function listDirectory(
   const results: FileEntry[] = [];
 
   for (const entry of entries) {
-    // Skip hidden files (dotfiles)
-    if (entry.name.startsWith(".")) continue;
+    // Skip hidden files (dotfiles) unless explicitly requested
+    if (!opts?.includeDotfiles && entry.name.startsWith(".")) continue;
 
     const entryPath = path.join(dirPath, entry.name);
     try {
@@ -159,6 +160,25 @@ export async function createDirectory(
   }
 
   await fs.mkdir(newDirPath, { recursive: false });
+}
+
+export async function copyEntry(
+  volume: VolumeConfig,
+  relativePath: string,
+  destinationRelative: string
+): Promise<void> {
+  const sourcePath = resolveVolumePath(volume, relativePath);
+  const destPath = resolveVolumePath(volume, destinationRelative);
+
+  if (sourcePath === volume.path) {
+    throw new HTTPException(403, { message: "Cannot copy volume root" });
+  }
+
+  const destParent = path.dirname(destPath);
+  await fs.access(destParent);
+
+  const stat = await fs.stat(sourcePath);
+  await fs.cp(sourcePath, destPath, { recursive: stat.isDirectory() });
 }
 
 export async function getVolumeStats(volume: VolumeConfig) {

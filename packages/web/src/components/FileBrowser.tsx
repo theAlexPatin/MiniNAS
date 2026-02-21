@@ -12,7 +12,7 @@ import SearchBar from "./SearchBar";
 import PreviewModal from "./PreviewModal";
 import ShareDialog from "./ShareDialog";
 import type { FileEntry } from "../lib/api";
-import { ChevronRight, Home, FolderPlus, RefreshCw, Loader2, LogOut, Upload, LayoutGrid, List } from "lucide-react";
+import { ChevronRight, Home, FolderPlus, RefreshCw, Loader2, LogOut, Upload, LayoutGrid, List, Settings } from "lucide-react";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -94,6 +94,13 @@ function FileBrowserInner({ initialVolume }: { initialVolume?: string }) {
             setCurrentPath("");
           }}
         />
+        <a
+          href="/settings"
+          className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+          title="Settings"
+        >
+          <Settings size={18} />
+        </a>
         <button
           onClick={logout}
           className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"

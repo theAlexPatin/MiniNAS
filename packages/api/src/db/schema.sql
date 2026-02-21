@@ -84,3 +84,15 @@ CREATE TABLE IF NOT EXISTS invite_tokens (
   expires_at TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS webdav_tokens (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  label TEXT NOT NULL,
+  token_hash TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  last_used_at TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_webdav_tokens_user ON webdav_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_webdav_tokens_hash ON webdav_tokens(token_hash);
