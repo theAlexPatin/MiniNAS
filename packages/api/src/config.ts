@@ -24,4 +24,5 @@ export const config = {
   thumbnailDir: process.env.THUMBNAIL_DIR || "./.mininas/thumbnails",
   uploadStagingDir:
     process.env.UPLOAD_STAGING_DIR || "./.mininas/uploads",
+  cliSecret: process.env.CLI_SECRET || "",
 } as const;
