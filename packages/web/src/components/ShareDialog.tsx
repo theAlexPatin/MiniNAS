@@ -84,7 +84,7 @@ export default function ShareDialog({ file, volume, onClose }: ShareDialogProps)
               />
               <button
                 onClick={handleCopy}
-                className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-500 rounded-md text-sm font-medium shrink-0"
+                className="flex items-center gap-1.5 px-3 py-2 bg-brand-600 hover:bg-brand-500 rounded-md text-sm font-medium shrink-0"
               >
                 {copied ? <Check size={16} /> : <Copy size={16} />}
                 {copied ? "Copied" : "Copy"}
@@ -147,7 +147,7 @@ export default function ShareDialog({ file, volume, onClose }: ShareDialogProps)
             <button
               onClick={handleCreate}
               disabled={creating}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-md font-medium text-sm"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-500 disabled:opacity-50 rounded-md font-medium text-sm"
             >
               {creating ? (
                 <Loader2 size={16} className="animate-spin" />

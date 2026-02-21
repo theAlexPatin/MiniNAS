@@ -96,7 +96,7 @@ export default function UploadProgress({
                           ? "bg-red-500"
                           : item.status === "complete"
                             ? "bg-green-500"
-                            : "bg-blue-500"
+                            : "bg-brand-500"
                       }`}
                       style={{ width: `${item.progress}%` }}
                     />

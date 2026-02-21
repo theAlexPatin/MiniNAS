@@ -46,7 +46,7 @@ export default function SearchBar({ volume, onNavigate }: SearchBarProps) {
           }}
           onFocus={() => query && setIsOpen(true)}
           placeholder="Search files..."
-          className="w-full pl-9 pr-8 py-1.5 bg-gray-800 border border-gray-700 rounded-md text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full pl-9 pr-8 py-1.5 bg-gray-800 border border-gray-700 rounded-md text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
         />
         {query && (
           <button
@@ -86,7 +86,7 @@ export default function SearchBar({ volume, onNavigate }: SearchBarProps) {
                   className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-gray-800 text-left"
                 >
                   {isDir ? (
-                    <Folder size={16} className="text-blue-400 shrink-0" />
+                    <Folder size={16} className="text-brand-400 shrink-0" />
                   ) : (
                     <File size={16} className="text-gray-400 shrink-0" />
                   )}

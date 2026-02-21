@@ -20,7 +20,7 @@ function formatBytes(bytes: number): string {
 }
 
 function getFileIcon(entry: FileEntry, size: number) {
-  if (entry.isDirectory) return <Folder size={size} className="text-blue-400" />;
+  if (entry.isDirectory) return <Folder size={size} className="text-brand-400" />;
   const mime = entry.mimeType || "";
   if (mime.startsWith("image/")) return <FileImage size={size} className="text-purple-400" />;
   if (mime.startsWith("video/")) return <FileVideo size={size} className="text-pink-400" />;

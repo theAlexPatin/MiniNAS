@@ -82,7 +82,10 @@ function FileBrowserInner({ initialVolume }: { initialVolume?: string }) {
     <div className="max-w-6xl mx-auto px-4 py-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold">MiniNAS</h1>
+        <div className="flex items-center gap-2.5">
+          <img src="/logo.png" alt="MiniNAS" className="w-8 h-8" />
+          <h1 className="text-xl font-semibold">MiniNAS</h1>
+        </div>
         <div className="flex items-center gap-4">
         <VolumeSelector
           selectedVolume={volume}
@@ -138,7 +141,7 @@ function FileBrowserInner({ initialVolume }: { initialVolume?: string }) {
               onClick={() => setShowUploadZone(!showUploadZone)}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-colors ${
                 showUploadZone
-                  ? "bg-blue-600 hover:bg-blue-500 text-white"
+                  ? "bg-brand-600 hover:bg-brand-500 text-white"
                   : "bg-gray-800 hover:bg-gray-700 text-gray-300"
               }`}
               title="Upload"
@@ -206,8 +209,7 @@ function FileBrowserInner({ initialVolume }: { initialVolume?: string }) {
         <div className="text-center py-20 text-red-400">
           Error loading files: {(error as Error).message}
         </div>
-      ) : (
-        {viewMode === "list" ? (
+      ) : viewMode === "list" ? (
           <FileList
             entries={data?.entries || []}
             volume={volume}
@@ -223,7 +225,6 @@ function FileBrowserInner({ initialVolume }: { initialVolume?: string }) {
             onNavigate={navigateTo}
             onPreview={setPreviewFile}
           />
-        )}
       )}
       {/* Preview Modal */}
       {previewFile && (

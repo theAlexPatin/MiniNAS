@@ -1,8 +1,6 @@
 <p align="center">
-  <img src="packages/web/public/favicon.svg" width="64" height="64" alt="MiniNAS">
+  <img src="logo.png" width="256" alt="MiniNAS">
 </p>
-
-<h1 align="center">MiniNAS</h1>
 
 <p align="center">
   Turn any Mac into a personal cloud storage server.<br>

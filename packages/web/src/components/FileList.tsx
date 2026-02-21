@@ -33,7 +33,7 @@ function formatDate(iso: string): string {
 }
 
 function getFileIcon(entry: FileEntry) {
-  if (entry.isDirectory) return <Folder size={20} className="text-blue-400" />;
+  if (entry.isDirectory) return <Folder size={20} className="text-brand-400" />;
   const mime = entry.mimeType || "";
   if (mime.startsWith("image/")) return <FileImage size={20} className="text-purple-400" />;
   if (mime.startsWith("video/")) return <FileVideo size={20} className="text-pink-400" />;
@@ -124,7 +124,7 @@ export default function FileList({
                         e.stopPropagation();
                         onShare(entry);
                       }}
-                      className="p-1 rounded hover:bg-gray-700 text-gray-400 hover:text-blue-400"
+                      className="p-1 rounded hover:bg-gray-700 text-gray-400 hover:text-brand-400"
                       title="Share"
                     >
                       <Link2 size={16} />

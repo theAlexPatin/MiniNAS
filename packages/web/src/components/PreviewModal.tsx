@@ -92,7 +92,7 @@ export default function PreviewModal({
         <p className="text-gray-400 mb-4">Preview not available for this file type</p>
         <a
           href={downloadUrl}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-md text-sm font-medium"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-500 rounded-md text-sm font-medium"
         >
           <Download size={16} />
           Download
