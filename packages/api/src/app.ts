@@ -76,7 +76,7 @@ app.route("/api/v1/cli", cliApi);
 const dav = new Hono();
 dav.use("*", webdavAuthMiddleware);
 dav.route("/", webdavRoutes);
-app.route("/dav", dav);
+app.route("", dav);
 
 // Hourly cleanup of abandoned uploads
 setInterval(cleanupStagingDir, 60 * 60 * 1000);

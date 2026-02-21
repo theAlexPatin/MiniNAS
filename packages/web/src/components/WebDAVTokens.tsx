@@ -74,8 +74,8 @@ function WebDAVTokensInner() {
   };
 
   const serverUrl = typeof window !== "undefined"
-    ? `${window.location.protocol}//${window.location.hostname}:${window.location.port || (window.location.protocol === "https:" ? "443" : "80")}/dav`
-    : "/dav";
+    ? `${window.location.protocol}//${window.location.hostname}:${window.location.port || (window.location.protocol === "https:" ? "443" : "80")}`
+    : "";
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">

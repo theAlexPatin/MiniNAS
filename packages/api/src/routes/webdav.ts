@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
+import { HTTPException } from "hono/http-exception";
 import { stream } from "hono/streaming";
 import fs from "node:fs";
 import fsPromises from "node:fs/promises";
@@ -27,6 +28,15 @@ import {
 } from "../lib/webdav-xml.js";
 
 const webdav = new Hono();
+
+// Return plain-text errors so macOS Finder / Windows Explorer don't choke on JSON bodies.
+webdav.onError((err, c) => {
+  if (err instanceof HTTPException) {
+    return c.body(err.message, err.status);
+  }
+  console.error("WebDAV error:", err);
+  return c.body("Internal Server Error", 500);
+});
 
 // --- In-memory lock store ---
 
@@ -58,10 +68,10 @@ function getSession(c: Context): { sub: string } {
 /**
  * Extract the WebDAV-relative path from the full request path.
  * c.req.param("*") doesn't work through nested route() calls,
- * so we use c.req.path and strip the /dav/ prefix ourselves.
+ * so we strip the leading slash ourselves.
  */
 function getDavSubpath(c: Context): string {
-  return c.req.path.replace(/^\/dav\/?/, "");
+  return c.req.path.replace(/^\//, "");
 }
 
 function parseDavPath(subpath: string): {
@@ -87,12 +97,12 @@ function parseDestination(
 ): { volumeId: string; relativePath: string } | null {
   try {
     const url = new URL(destHeader);
-    const davPath = url.pathname.replace(/^\/dav\/?/, "");
+    const davPath = url.pathname.replace(/^\//, "");
     const parsed = parseDavPath(davPath);
     if (!parsed.volumeId) return null;
     return { volumeId: parsed.volumeId, relativePath: parsed.relativePath };
   } catch {
-    const davPath = destHeader.replace(/^\/dav\/?/, "");
+    const davPath = destHeader.replace(/^\//, "");
     const parsed = parseDavPath(davPath);
     if (!parsed.volumeId) return null;
     return { volumeId: parsed.volumeId, relativePath: parsed.relativePath };
@@ -108,8 +118,8 @@ function ensureTrailingSlash(p: string): string {
 }
 
 function davHref(volumeId: string | null, relativePath: string): string {
-  if (!volumeId) return "/dav/";
-  const base = `/dav/${encodeURI(volumeId)}`;
+  if (!volumeId) return "/";
+  const base = `/${encodeURI(volumeId)}`;
   if (!relativePath) return base + "/";
   return `${base}/${relativePath.split("/").map(encodeURIComponent).join("/")}`;
 }
@@ -145,7 +155,7 @@ webdav.on("PROPFIND", ["/*", "/"], async (c) => {
     const accessible = allVolumes.filter((v) => volumeIds.includes(v.id));
 
     resources.push({
-      href: "/dav/",
+      href: "/",
       isCollection: true,
       displayName: "",
       contentLength: 0,
@@ -507,7 +517,7 @@ webdav.on("UNLOCK", "/*", async (c) => {
 
 webdav.on("PROPPATCH", "/*", async (c) => {
   const subpath = getDavSubpath(c);
-  const href = "/dav/" + subpath;
+  const href = "/" + subpath;
   c.header("Content-Type", "application/xml; charset=utf-8");
   return c.body(proppatchResponse(href), 207);
 });
