@@ -1,10 +1,13 @@
 import dotenv from "dotenv";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Load .env from monorepo root
 dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
+
+const dataDir = path.join(os.homedir(), ".mininas", "data");
 
 export interface VolumeConfig {
   id: string;
@@ -20,9 +23,10 @@ export const config = {
     name: process.env.RP_NAME || "MiniNAS",
     origin: process.env.RP_ORIGIN || "http://localhost:4321",
   },
-  dbPath: process.env.DB_PATH || "./data/mininas.db",
-  thumbnailDir: process.env.THUMBNAIL_DIR || "./.mininas/thumbnails",
+  dbPath: process.env.DB_PATH || path.join(dataDir, "mininas.db"),
+  thumbnailDir:
+    process.env.THUMBNAIL_DIR || path.join(dataDir, "thumbnails"),
   uploadStagingDir:
-    process.env.UPLOAD_STAGING_DIR || "./.mininas/uploads",
+    process.env.UPLOAD_STAGING_DIR || path.join(dataDir, "uploads"),
   cliSecret: process.env.CLI_SECRET || "",
 } as const;
