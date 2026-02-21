@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+#
+# MiniNAS Worktree Setup
+#
+# Run this from a fresh git worktree to get it ready for development
+# without reinstalling node_modules or reconfiguring secrets.
+#
+# Usage: ../scripts/worktree-setup
+#    or: /path/to/MiniNAS/scripts/worktree-setup
+#
+
+set -euo pipefail
+
+# Resolve the main repo root (where this script lives)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MAIN_REPO="$(dirname "$SCRIPT_DIR")"
+WORKTREE_DIR="$(pwd)"
+
+# Don't run this from the main repo itself
+if [[ "$WORKTREE_DIR" == "$MAIN_REPO" ]]; then
+  echo "Error: Run this from inside a worktree, not the main repo."
+  exit 1
+fi
+
+echo "==> Setting up MiniNAS worktree"
+echo "    Main repo: $MAIN_REPO"
+echo "    Worktree:  $WORKTREE_DIR"
+echo ""
+
+# ── 1. Symlink node_modules from the main repo ──────────────────────
+# This avoids a full pnpm install (which takes time + rebuilds native modules)
+
+link_modules() {
+  local target="$1"
+  local source="$2"
+  if [[ -d "$source" && ! -L "$target" ]]; then
+    rm -rf "$target" 2>/dev/null || true
+    ln -s "$source" "$target"
+    echo "    Linked $target"
+  fi
+}
+
+echo "==> Linking node_modules"
+link_modules "$WORKTREE_DIR/node_modules" "$MAIN_REPO/node_modules"
+link_modules "$WORKTREE_DIR/packages/api/node_modules" "$MAIN_REPO/packages/api/node_modules"
+link_modules "$WORKTREE_DIR/packages/web/node_modules" "$MAIN_REPO/packages/web/node_modules"
+echo ""
+
+# ── 2. Copy .env from main repo (if not already present) ────────────
+if [[ ! -f "$WORKTREE_DIR/.env" ]]; then
+  if [[ -f "$MAIN_REPO/.env" ]]; then
+    cp "$MAIN_REPO/.env" "$WORKTREE_DIR/.env"
+    echo "==> Copied .env from main repo"
+  else
+    cp "$WORKTREE_DIR/.env.example" "$WORKTREE_DIR/.env"
+    echo "==> Created .env from .env.example (edit as needed)"
+  fi
+else
+  echo "==> .env already exists, skipping"
+fi
+echo ""
+
+# ── 3. Ensure data/cache directories exist ───────────────────────────
+echo "==> Creating data directories"
+mkdir -p "$WORKTREE_DIR/data"
+mkdir -p "$WORKTREE_DIR/.mininas/thumbnails"
+mkdir -p "$WORKTREE_DIR/.mininas/uploads"
+echo ""
+
+# ── 4. Symlink the SQLite database (shared across worktrees) ────────
+# This keeps auth state / sessions / file index consistent
+if [[ -f "$MAIN_REPO/data/mininas.db" && ! -f "$WORKTREE_DIR/data/mininas.db" ]]; then
+  ln -s "$MAIN_REPO/data/mininas.db" "$WORKTREE_DIR/data/mininas.db"
+  echo "==> Linked shared database from main repo"
+elif [[ ! -f "$WORKTREE_DIR/data/mininas.db" ]]; then
+  echo "==> No existing database found (one will be created on first run)"
+fi
+echo ""
+
+# ── 5. Symlink thumbnail cache (avoid regenerating) ─────────────────
+if [[ -d "$MAIN_REPO/.mininas/thumbnails" ]]; then
+  rm -rf "$WORKTREE_DIR/.mininas/thumbnails" 2>/dev/null || true
+  ln -s "$MAIN_REPO/.mininas/thumbnails" "$WORKTREE_DIR/.mininas/thumbnails"
+  echo "==> Linked thumbnail cache"
+fi
+echo ""
+
+# ── Done ─────────────────────────────────────────────────────────────
+echo "==> Worktree ready!"
+echo ""
+echo "    Start dev servers:"
+echo "      pnpm dev"
+echo ""
+echo "    Or run individually:"
+echo "      pnpm --filter @mininas/api dev    # API on :3001"
+echo "      pnpm --filter @mininas/web dev    # Web on :4321"
+echo ""
