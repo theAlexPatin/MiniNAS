@@ -52,7 +52,17 @@ symlink_dir() {
   local src="$SOURCE_WORKTREE/$rel_path"
   local dst="$CURRENT_WORKTREE/$rel_path"
 
-  if [ -d "$src" ] && [ ! -e "$dst" ]; then
+  if [ ! -d "$src" ]; then
+    return
+  fi
+
+  # Remove existing real directory (not a symlink) before linking
+  if [ -d "$dst" ] && [ ! -L "$dst" ]; then
+    rm -rf "$dst"
+    echo "    Removed existing $rel_path"
+  fi
+
+  if [ ! -e "$dst" ]; then
     mkdir -p "$(dirname "$dst")"
     ln -s "$src" "$dst"
     echo "    Linked $rel_path"
