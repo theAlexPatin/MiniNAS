@@ -1,5 +1,6 @@
 import { useState, useRef, type DragEvent } from "react";
 import { Upload, FolderUp } from "lucide-react";
+import { getFilesFromDataTransfer } from "../lib/drop";
 
 interface UploadZoneProps {
   onFilesSelected: (files: File[]) => void;
@@ -20,10 +21,10 @@ export default function UploadZone({ onFilesSelected }: UploadZoneProps) {
     setIsDragging(false);
   };
 
-  const handleDrop = (e: DragEvent) => {
+  const handleDrop = async (e: DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    const files = Array.from(e.dataTransfer.files);
+    const files = await getFilesFromDataTransfer(e.dataTransfer);
     if (files.length > 0) {
       onFilesSelected(files);
     }

@@ -12,7 +12,8 @@ import SearchBar from "./SearchBar";
 import PreviewModal from "./PreviewModal";
 import ShareDialog from "./ShareDialog";
 import type { FileEntry } from "../lib/api";
-import { ChevronRight, Home, FolderPlus, RefreshCw, Loader2, LogOut, Upload, LayoutGrid, List, Settings } from "lucide-react";
+import { ChevronRight, Home, FolderPlus, RefreshCw, Loader2, LogOut, Upload, LayoutGrid, List, Settings, UploadCloud } from "lucide-react";
+import { getFilesFromDataTransfer } from "../lib/drop";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -66,11 +67,55 @@ function FileBrowserInner() {
     resumeUpload,
     cancelUpload,
     clearCompleted,
-  } = useUpload(volume, currentPath);
+  } = useUpload(volume, currentPath, refetch);
   const [showUploadZone, setShowUploadZone] = useState(false);
   const [previewFile, setPreviewFile] = useState<FileEntry | null>(null);
   const [shareFile, setShareFile] = useState<FileEntry | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+
+  // Global drag-and-drop: show overlay when files are dragged anywhere on page
+  const [globalDragging, setGlobalDragging] = useState(false);
+  const dragCounter = useRef(0);
+
+  useEffect(() => {
+    const onDragEnter = (e: DragEvent) => {
+      e.preventDefault();
+      dragCounter.current++;
+      if (e.dataTransfer?.types.includes("Files")) {
+        setGlobalDragging(true);
+      }
+    };
+    const onDragLeave = (e: DragEvent) => {
+      e.preventDefault();
+      dragCounter.current--;
+      if (dragCounter.current === 0) {
+        setGlobalDragging(false);
+      }
+    };
+    const onDragOver = (e: DragEvent) => {
+      e.preventDefault();
+    };
+    const onDrop = async (e: DragEvent) => {
+      e.preventDefault();
+      dragCounter.current = 0;
+      setGlobalDragging(false);
+      if (!volume || !e.dataTransfer) return;
+      const files = await getFilesFromDataTransfer(e.dataTransfer);
+      if (files.length > 0) {
+        addFiles(files);
+      }
+    };
+    window.addEventListener("dragenter", onDragEnter);
+    window.addEventListener("dragleave", onDragLeave);
+    window.addEventListener("dragover", onDragOver);
+    window.addEventListener("drop", onDrop);
+    return () => {
+      window.removeEventListener("dragenter", onDragEnter);
+      window.removeEventListener("dragleave", onDragLeave);
+      window.removeEventListener("dragover", onDragOver);
+      window.removeEventListener("drop", onDrop);
+    };
+  }, [volume, addFiles]);
 
   // Navigate to a directory path within the current volume
   const navigateTo = useCallback((newPath: string) => {
@@ -312,6 +357,16 @@ function FileBrowserInner() {
         onCancel={cancelUpload}
         onClearCompleted={clearCompleted}
       />
+
+      {/* Global drag-and-drop overlay */}
+      {globalDragging && volume && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-600/10 backdrop-blur-sm pointer-events-none">
+          <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-brand-500 bg-white/90 px-16 py-12 shadow-lg">
+            <UploadCloud size={48} className="text-brand-500" />
+            <p className="text-lg font-medium text-gray-700">Drop files to upload</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

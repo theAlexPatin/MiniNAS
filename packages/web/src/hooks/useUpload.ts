@@ -10,7 +10,7 @@ export interface UploadItem {
   upload?: tus.Upload;
 }
 
-export function useUpload(volume: string, directory: string) {
+export function useUpload(volume: string, directory: string, onComplete?: () => void) {
   const [uploads, setUploads] = useState<UploadItem[]>([]);
   const idCounter = useRef(0);
 
@@ -36,6 +36,12 @@ export function useUpload(volume: string, directory: string) {
             filetype: file.type,
             volume,
             directory,
+            // Preserve folder structure for directory uploads (e.g. "Photos/vacation/img.jpg")
+            ...(file.webkitRelativePath ? { relativePath: file.webkitRelativePath } : {}),
+          },
+          onBeforeRequest: (req) => {
+            const xhr = req.getUnderlyingObject() as XMLHttpRequest;
+            xhr.withCredentials = true;
           },
           onProgress: (bytesUploaded, bytesTotal) => {
             const progress = Math.round((bytesUploaded / bytesTotal) * 100);
@@ -43,6 +49,7 @@ export function useUpload(volume: string, directory: string) {
           },
           onSuccess: () => {
             updateUpload(id, { progress: 100, status: "complete" });
+            onComplete?.();
           },
           onError: (error) => {
             updateUpload(id, {
@@ -69,7 +76,7 @@ export function useUpload(volume: string, directory: string) {
         updateUpload(item.id, { status: "uploading" });
       }
     },
-    [volume, directory, updateUpload]
+    [volume, directory, updateUpload, onComplete]
   );
 
   const pauseUpload = useCallback(

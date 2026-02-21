@@ -24,23 +24,27 @@ const tusServer = new Server({
     const volumeId = metadata.volume;
     const targetDir = metadata.directory || "";
     const fileName = metadata.filename || upload.id;
+    // relativePath preserves folder structure (e.g. "MyFolder/sub/file.txt")
+    const relativePath = metadata.relativePath;
 
     if (!volumeId) return res;
 
     try {
       const volume = getVolume(volumeId);
+      const fileDest = relativePath || fileName;
       const targetPath = resolveVolumePath(
         volume,
-        path.join(targetDir, fileName)
+        path.join(targetDir, fileDest)
       );
 
       // Ensure parent directory exists
       const parentDir = path.dirname(targetPath);
       fs.mkdirSync(parentDir, { recursive: true });
 
-      // Move file from staging to target
+      // Move file from staging to target (copyFile + unlink to handle cross-device moves)
       const stagingPath = path.join(config.uploadStagingDir, upload.id);
-      fs.renameSync(stagingPath, targetPath);
+      fs.copyFileSync(stagingPath, targetPath);
+      fs.unlinkSync(stagingPath);
 
       // Clean up .json metadata file
       const metaPath = `${stagingPath}.json`;
@@ -75,13 +79,33 @@ upload.post("/*", async (c, next) => {
   await next();
 });
 
-// Bridge all tus methods to the tus server using raw Node.js req/res
+// Bridge all tus methods to the tus server using raw Node.js req/res.
+// The tus server writes directly to the Node.js response, bypassing Hono's
+// middleware pipeline, so we must set CORS headers on the raw response ourselves.
 upload.all("/*", async (c) => {
   const req = c.env.incoming;
   const res = c.env.outgoing;
 
   if (!req || !res) {
     return c.json({ error: "Upload requires Node.js server" }, 500);
+  }
+
+  const origin = c.req.header("origin");
+  if (origin === config.rp.origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization, Tus-Resumable, Upload-Length, Upload-Offset, Upload-Metadata"
+    );
+    res.setHeader(
+      "Access-Control-Expose-Headers",
+      "Content-Range, Accept-Ranges, Content-Length, Tus-Resumable, Upload-Offset, Upload-Length, Location"
+    );
+    res.setHeader(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD"
+    );
   }
 
   await tusServer.handle(req, res);
