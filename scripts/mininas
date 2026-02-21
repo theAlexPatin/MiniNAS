@@ -24,9 +24,10 @@ const apiRequire = createRequire(
 );
 const Database = apiRequire("better-sqlite3");
 
+// Resolve DB path relative to packages/api/ (where the server runs from)
+const apiDir = path.resolve(__dirname, "../packages/api");
 const dbPath = path.resolve(
-  __dirname,
-  "..",
+  apiDir,
   process.env.DB_PATH || "./data/mininas.db"
 );
 
@@ -84,8 +85,57 @@ function nanoid(size = 21) {
 
 const [command, action, ...args] = process.argv.slice(2);
 
+const readline = require("node:readline");
+
+// Buffer stdin lines so prompts work with both piped and interactive input
+const _stdinLines = [];
+let _stdinDone = false;
+let _stdinWaiter = null;
+
+const _rl = readline.createInterface({ input: process.stdin, terminal: false });
+_rl.on("line", (line) => {
+  if (_stdinWaiter) {
+    const resolve = _stdinWaiter;
+    _stdinWaiter = null;
+    resolve(line.trim());
+  } else {
+    _stdinLines.push(line.trim());
+  }
+});
+_rl.on("close", () => {
+  _stdinDone = true;
+  if (_stdinWaiter) {
+    const resolve = _stdinWaiter;
+    _stdinWaiter = null;
+    resolve("");
+  }
+});
+
+function prompt(question) {
+  process.stdout.write(question);
+  if (_stdinLines.length > 0) {
+    const answer = _stdinLines.shift();
+    process.stdout.write(answer + "\n");
+    return Promise.resolve(answer);
+  }
+  if (_stdinDone) return Promise.resolve("");
+  return new Promise((resolve) => { _stdinWaiter = resolve; });
+}
+
+function discoverVolumes() {
+  const volumesDir = "/Volumes";
+  if (!fs.existsSync(volumesDir)) return [];
+  return fs.readdirSync(volumesDir)
+    .filter((name) => !name.startsWith("."))
+    .map((name) => ({ name, path: path.join(volumesDir, name) }))
+    .filter((v) => {
+      try { fs.accessSync(v.path, fs.constants.R_OK); return true; } catch { return false; }
+    });
+}
+
 const USAGE = `Usage:
   mininas volume list
+  mininas volume add              (interactive)
   mininas volume add <id> <label> <path>
   mininas volume remove <id>
   mininas volume visibility <id> <public|private>
@@ -107,6 +157,8 @@ if (!command || (command !== "volume" && command !== "user" && command !== "invi
 }
 
 const db = getDb();
+
+async function main() {
 
 // --- Volume commands ---
 if (command === "volume") {
@@ -134,7 +186,59 @@ if (command === "volume") {
 
     case "add": {
       const [id, label, volumePath] = args;
-      if (!id || !label || !volumePath) {
+
+      // Interactive mode when no arguments provided
+      if (!id) {
+        const registered = db.prepare("SELECT path FROM volumes").all().map((r) => r.path);
+        const available = discoverVolumes().filter((v) => !registered.includes(v.path));
+
+        if (available.length === 0) {
+          console.log("No unregistered volumes found in /Volumes/.");
+          console.log("You can add one manually: mininas volume add <id> <label> <path>");
+          process.exit(0);
+        }
+
+        console.log("\nAvailable volumes:\n");
+        for (let i = 0; i < available.length; i++) {
+          console.log(`  ${i + 1}) ${available[i].name}  (${available[i].path})`);
+        }
+        console.log();
+
+        const choice = await prompt(`Select a volume (1-${available.length}): `);
+        const idx = parseInt(choice, 10) - 1;
+        if (isNaN(idx) || idx < 0 || idx >= available.length) {
+          console.error("Invalid selection.");
+          process.exit(1);
+        }
+
+        const selected = available[idx];
+        const defaultId = selected.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+        const chosenId = (await prompt(`Volume ID [${defaultId}]: `)) || defaultId;
+        const chosenLabel = (await prompt(`Label [${selected.name}]: `)) || selected.name;
+
+        try {
+          db.prepare("INSERT INTO volumes (id, label, path) VALUES (?, ?, ?)").run(
+            chosenId,
+            chosenLabel,
+            selected.path
+          );
+          console.log(`\nAdded volume: ${chosenId} (${chosenLabel}) -> ${selected.path}`);
+          console.log("Restart the server to pick up changes.");
+        } catch (err) {
+          if (err.code === "SQLITE_CONSTRAINT_PRIMARYKEY") {
+            console.error(`Volume with id '${chosenId}' already exists.`);
+          } else if (err.code === "SQLITE_CONSTRAINT_UNIQUE") {
+            console.error(`A volume with path '${selected.path}' already exists.`);
+          } else {
+            console.error(`Error: ${err.message}`);
+          }
+          process.exit(1);
+        }
+        break;
+      }
+
+      // Explicit mode: mininas volume add <id> <label> <path>
+      if (!label || !volumePath) {
         console.error("Usage: mininas volume add <id> <label> <path>");
         process.exit(1);
       }
@@ -395,4 +499,6 @@ if (command === "invite") {
   }
 }
 
-db.close();
+} // end main
+
+main().finally(() => { _rl.close(); db.close(); });
