@@ -14,6 +14,8 @@ import searchRoutes from "./routes/search.js";
 import previewRoutes from "./routes/preview.js";
 import shareRoutes from "./routes/share.js";
 import adminRoutes from "./routes/admin.js";
+import cliRoutes from "./routes/cli.js";
+import { cliAuthMiddleware } from "./middleware/cli-auth.js";
 
 const app = new Hono();
 
@@ -52,6 +54,12 @@ adminApi.route("/", adminRoutes);
 api.route("/admin", adminApi);
 
 app.route("/api/v1", api);
+
+// CLI routes (CLI_SECRET token required)
+const cliApi = new Hono();
+cliApi.use("*", cliAuthMiddleware);
+cliApi.route("/", cliRoutes);
+app.route("/api/v1/cli", cliApi);
 
 // Hourly cleanup of abandoned uploads
 setInterval(cleanupStagingDir, 60 * 60 * 1000);
