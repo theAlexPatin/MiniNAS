@@ -5,6 +5,7 @@ import { createInvite } from "../services/invites.js";
 import { createManagementRoutes } from "./management.js";
 import { config } from "../config.js";
 import { getVolumeById, addVolume, removeVolume } from "../services/volumes.js";
+import { scanVolume, watchVolume, unwatchVolume } from "../services/indexer.js";
 import { getUserById, resetPasskeys } from "../services/access.js";
 import { getDb } from "../db/index.js";
 
@@ -49,6 +50,9 @@ admin.post("/volumes", async (c) => {
     throw new HTTPException(400, { message: err.message });
   }
 
+  const volume = getVolumeById(id)!;
+  scanVolume(volume).then(() => watchVolume(volume));
+
   return c.json({ ok: true, id }, 201);
 });
 
@@ -60,6 +64,7 @@ admin.delete("/volumes/:id", (c) => {
   }
 
   removeVolume(id);
+  unwatchVolume(id);
   return c.json({ ok: true, volume });
 });
 

@@ -7,7 +7,7 @@ import { getDb } from "../db/index.js";
 import type { VolumeConfig } from "../config.js";
 import { getVolumes } from "./volumes.js";
 
-const watchers: ReturnType<typeof watch>[] = [];
+const watchers = new Map<string, ReturnType<typeof watch>>();
 
 function indexFile(volume: VolumeConfig, filePath: string) {
   const db = getDb();
@@ -89,42 +89,59 @@ export async function scanVolume(volume: VolumeConfig) {
   console.log(`Indexing complete: ${volume.id} (${count} entries)`);
 }
 
-export function startWatchers() {
-  for (const volume of getVolumes()) {
-    try {
-      fs.accessSync(volume.path);
-    } catch {
-      console.warn(`Volume ${volume.id} not accessible at ${volume.path}, skipping watcher`);
-      continue;
-    }
+export function watchVolume(volume: VolumeConfig) {
+  if (watchers.has(volume.id)) return;
 
-    const watcher = watch(volume.path, {
-      ignored: [/(^|[/\\])\.|node_modules|Library|\.sock$|\.lock$/],
-      persistent: true,
-      ignoreInitial: true,
-      depth: 5,
+  try {
+    fs.accessSync(volume.path);
+  } catch {
+    console.warn(`Volume ${volume.id} not accessible at ${volume.path}, skipping watcher`);
+    return;
+  }
+
+  const watcher = watch(volume.path, {
+    ignored: [/(^|[/\\])\.|node_modules|Library|\.sock$|\.lock$/],
+    persistent: true,
+    ignoreInitial: true,
+    depth: 5,
+  });
+
+  watcher
+    .on("add", (p) => indexFile(volume, p))
+    .on("addDir", (p) => indexFile(volume, p))
+    .on("change", (p) => indexFile(volume, p))
+    .on("unlink", (p) => removeFromIndex(volume, p))
+    .on("unlinkDir", (p) => removeFromIndex(volume, p))
+    .on("error", (err) => {
+      console.warn(`Watcher error on ${volume.id}:`, err);
     });
 
-    watcher
-      .on("add", (p) => indexFile(volume, p))
-      .on("addDir", (p) => indexFile(volume, p))
-      .on("change", (p) => indexFile(volume, p))
-      .on("unlink", (p) => removeFromIndex(volume, p))
-      .on("unlinkDir", (p) => removeFromIndex(volume, p))
-      .on("error", (err) => {
-        console.warn(`Watcher error on ${volume.id}:`, err.message);
-      });
+  watchers.set(volume.id, watcher);
+  console.log(`Watching volume: ${volume.id}`);
+}
 
-    watchers.push(watcher);
-    console.log(`Watching volume: ${volume.id}`);
+export function unwatchVolume(volumeId: string) {
+  const watcher = watchers.get(volumeId);
+  if (watcher) {
+    watcher.close();
+    watchers.delete(volumeId);
+  }
+  const db = getDb();
+  db.prepare("DELETE FROM file_index WHERE volume = ?").run(volumeId);
+  console.log(`Unwatched and de-indexed volume: ${volumeId}`);
+}
+
+export function startWatchers() {
+  for (const volume of getVolumes()) {
+    watchVolume(volume);
   }
 }
 
 export function stopWatchers() {
-  for (const w of watchers) {
+  for (const w of watchers.values()) {
     w.close();
   }
-  watchers.length = 0;
+  watchers.clear();
 }
 
 export function searchFiles(query: string, volumeId?: string) {

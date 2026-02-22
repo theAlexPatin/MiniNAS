@@ -95,7 +95,7 @@ export function registerVolumeCommands(program: Command, getOpts: () => ApiOpts)
         console.log(
           `\nAdded volume: ${chosenId} (${chosenLabel}) -> ${selected.path}`
         );
-        console.log("Restart the server to pick up changes.");
+
         return;
       }
 
