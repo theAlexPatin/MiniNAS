@@ -1,21 +1,9 @@
 import { cors } from "hono/cors";
-import { config } from "../config.js";
+import { isAllowedOrigin } from "../lib/url.js";
 
 export const corsMiddleware = cors({
   origin: (origin, c) => {
-    // Allow configured RP origin and BASE_URL
-    if (origin === config.rp.origin) return origin;
-    if (config.baseUrl && origin === config.baseUrl) return origin;
-
-    // Derive allowed origin from Host header for dynamic access
-    const host = c.req.header("Host");
-    if (host) {
-      const proto = c.req.header("X-Forwarded-Proto") || "https";
-      const derived = `${proto}://${host}`;
-      if (origin === derived) return origin;
-    }
-
-    return null;
+    return isAllowedOrigin(origin, c) ? origin : null;
   },
   credentials: true,
   allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],

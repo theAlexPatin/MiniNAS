@@ -22,7 +22,6 @@
     "better-sqlite3": "^11.8.0",
     "chokidar": "^4.0.0",
     "commander": "^13.0.0",
-    "dotenv": "^16.4.0",
     "fast-xml-parser": "^5.3.7",
     "fluent-ffmpeg": "^2.1.0",
     "hono": "^4.7.0",

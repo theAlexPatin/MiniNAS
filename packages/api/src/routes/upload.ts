@@ -4,6 +4,7 @@ import { FileStore } from "@tus/file-store";
 import fs from "node:fs";
 import path from "node:path";
 import { config } from "../config.js";
+import { isAllowedOrigin } from "../lib/url.js";
 import { getVolume, resolveVolumePath } from "../services/filesystem.js";
 import { canAccessVolume } from "../services/access.js";
 import { audit } from "../services/audit-log.js";
@@ -101,13 +102,7 @@ upload.all("/*", async (c) => {
   }
 
   const origin = c.req.header("origin");
-  const host = c.req.header("Host");
-  const allowedOrigin = origin && (
-    origin === config.rp.origin ||
-    (config.baseUrl && origin === config.baseUrl) ||
-    (host && origin === `${c.req.header("X-Forwarded-Proto") || "https"}://${host}`)
-  );
-  if (origin && allowedOrigin) {
+  if (origin && isAllowedOrigin(origin, c)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Access-Control-Allow-Credentials", "true");
     res.setHeader(
