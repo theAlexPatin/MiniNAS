@@ -3,8 +3,9 @@ import react from "@astrojs/react";
 import tailwind from "@astrojs/tailwind";
 
 export default defineConfig({
+  devToolbar: { enabled: false },
   integrations: [react(), tailwind()],
-  server: { port: 4321 },
+  server: { port: 4321, host: "0.0.0.0" },
   vite: {
     plugins: [
       {
@@ -26,6 +27,7 @@ export default defineConfig({
       },
     ],
     server: {
+      allowedHosts: [".ts.net"],
       proxy: {
         "/api": {
           target: "http://localhost:3001",

@@ -12,6 +12,7 @@ export default function ShareDialog({ file, volume, onClose }: ShareDialogProps)
   const [password, setPassword] = useState("");
   const [maxDownloads, setMaxDownloads] = useState("");
   const [expiresIn, setExpiresIn] = useState("24");
+  const [isPublic, setIsPublic] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
   const [creating, setCreating] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -31,6 +32,7 @@ export default function ShareDialog({ file, volume, onClose }: ShareDialogProps)
           password: password || undefined,
           maxDownloads: maxDownloads ? parseInt(maxDownloads) : undefined,
           expiresIn: expiresIn ? parseInt(expiresIn) : undefined,
+          isPublic: isPublic || undefined,
         }),
       });
 
@@ -40,7 +42,7 @@ export default function ShareDialog({ file, volume, onClose }: ShareDialogProps)
       }
 
       const data = await res.json();
-      const url = `${window.location.origin}/api/v1/share/${data.share.id}/download`;
+      const url = data.url || `${window.location.origin}/api/v1/share/${data.share.id}/download`;
       setShareUrl(url);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create share");
@@ -139,6 +141,21 @@ export default function ShareDialog({ file, volume, onClose }: ShareDialogProps)
                 <option value="">Never</option>
               </select>
             </div>
+
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isPublic}
+                onChange={(e) => setIsPublic(e.target.checked)}
+                className="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+              />
+              <span className="text-sm text-gray-700">
+                Allow public access
+              </span>
+            </label>
+            <p className="text-xs text-gray-400 -mt-1 ml-6">
+              Anyone with the link can download, even outside your network
+            </p>
 
             {error && (
               <p className="text-sm text-red-500">{error}</p>

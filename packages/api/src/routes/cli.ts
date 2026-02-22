@@ -9,6 +9,7 @@ import {
   listUsers,
   deleteUser,
   getUserById,
+  resetPasskeys,
   setVolumeVisibility,
   getVolumeAccessList,
   grantVolumeAccess,
@@ -142,6 +143,16 @@ cli.delete("/volumes/:id/access/:userId", (c) => {
 cli.get("/users", (c) => {
   const users = listUsers();
   return c.json({ users });
+});
+
+cli.post("/users/:id/reset-passkeys", (c) => {
+  const userId = c.req.param("id");
+  const user = getUserById(userId);
+  if (!user) {
+    throw new HTTPException(404, { message: "User not found" });
+  }
+  const count = resetPasskeys(userId);
+  return c.json({ ok: true, username: user.username, removedCredentials: count });
 });
 
 cli.delete("/users/:id", (c) => {

@@ -15,13 +15,35 @@ export interface VolumeConfig {
   path: string;
 }
 
+const baseUrl = process.env.BASE_URL || "";
+
+// Auto-derive RP settings from BASE_URL when not explicitly set
+function deriveRpId(): string {
+  if (process.env.RP_ID) return process.env.RP_ID;
+  if (baseUrl) {
+    try {
+      return new URL(baseUrl).hostname;
+    } catch { /* invalid URL, fall through */ }
+  }
+  return "localhost";
+}
+
+function deriveRpOrigin(): string {
+  if (process.env.RP_ORIGIN) return process.env.RP_ORIGIN;
+  if (baseUrl) return baseUrl;
+  return "http://localhost:4321";
+}
+
 export const config = {
   port: parseInt(process.env.PORT || "3001", 10),
   sessionSecret: process.env.SESSION_SECRET || "change-me",
+  baseUrl,
+  publicSharePort: parseInt(process.env.PUBLIC_SHARE_PORT || "0", 10),
+  publicShareUrl: process.env.PUBLIC_SHARE_URL || "",
   rp: {
-    id: process.env.RP_ID || "localhost",
+    id: deriveRpId(),
     name: process.env.RP_NAME || "MiniNAS",
-    origin: process.env.RP_ORIGIN || "http://localhost:4321",
+    origin: deriveRpOrigin(),
   },
   dbPath: process.env.DB_PATH || path.join(dataDir, "mininas.db"),
   thumbnailDir:

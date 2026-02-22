@@ -74,7 +74,7 @@ function WebDAVTokensInner() {
   };
 
   const serverUrl = typeof window !== "undefined"
-    ? `${window.location.protocol}//${window.location.hostname}:${window.location.port || (window.location.protocol === "https:" ? "443" : "80")}`
+    ? `${window.location.protocol}//${window.location.host}`
     : "";
 
   return (

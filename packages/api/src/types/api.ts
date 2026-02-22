@@ -47,6 +47,7 @@ export const CreateShareSchema = z.object({
   password: z.string().optional(),
   maxDownloads: z.number().int().positive().optional(),
   expiresIn: z.number().int().positive().optional(), // hours
+  isPublic: z.boolean().optional(),
 });
 
 // Zip download request

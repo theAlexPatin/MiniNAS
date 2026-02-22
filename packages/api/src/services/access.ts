@@ -114,6 +114,17 @@ export function listUsers(): UserInfo[] {
     .all() as UserInfo[];
 }
 
+export function resetPasskeys(userId: string): number {
+  const db = getDb();
+  const user = getUserById(userId);
+  if (!user) return 0;
+
+  const result = db.prepare("DELETE FROM credentials WHERE user_id = ?").run(userId);
+  // Also clear active sessions so they have to re-authenticate
+  db.prepare("DELETE FROM sessions WHERE user_id = ?").run(userId);
+  return result.changes;
+}
+
 export function deleteUser(userId: string): boolean {
   const db = getDb();
   // Don't allow deleting admin users

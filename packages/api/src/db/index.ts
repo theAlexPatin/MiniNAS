@@ -30,6 +30,11 @@ export function getDb(): Database.Database {
     } catch {
       // Column already exists
     }
+    try {
+      db.exec("ALTER TABLE share_links ADD COLUMN is_public INTEGER NOT NULL DEFAULT 0");
+    } catch {
+      // Column already exists
+    }
 
     // Ensure existing admin user has the admin role
     db.exec("UPDATE users SET role = 'admin' WHERE username = 'admin' AND role = 'user'");

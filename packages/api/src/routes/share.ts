@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import mime from "mime-types";
 import { CreateShareSchema } from "../types/api.js";
+import { config } from "../config.js";
 import { getVolume, resolveVolumePath } from "../services/filesystem.js";
 import { authMiddleware } from "../middleware/auth.js";
 import {
@@ -15,6 +16,16 @@ import {
   listUserShares,
   deleteShareLink,
 } from "../services/share.js";
+
+function getShareUrl(shareId: string, isPublic: boolean): string | null {
+  if (isPublic && config.publicShareUrl) {
+    return `${config.publicShareUrl}/s/${shareId}`;
+  }
+  if (config.baseUrl) {
+    return `${config.baseUrl}/api/v1/share/${shareId}/download`;
+  }
+  return null;
+}
 
 const share = new Hono();
 
@@ -97,9 +108,11 @@ share.post(
       password: body.password,
       maxDownloads: body.maxDownloads,
       expiresInHours: body.expiresIn,
+      isPublic: body.isPublic,
     });
 
-    return c.json({ share: link }, 201);
+    const url = getShareUrl(link.id, !!link.is_public);
+    return c.json({ share: link, ...(url ? { url } : {}) }, 201);
   }
 );
 
@@ -107,7 +120,11 @@ share.post(
 share.get("/", authMiddleware, async (c) => {
   const session = c.get("session" as never) as { sub: string };
   const shares = listUserShares(session.sub);
-  return c.json({ shares });
+  const sharesWithUrls = shares.map((s) => ({
+    ...s,
+    url: getShareUrl(s.id, !!s.is_public),
+  }));
+  return c.json({ shares: sharesWithUrls });
 });
 
 // Delete share

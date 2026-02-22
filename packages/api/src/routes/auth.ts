@@ -38,25 +38,27 @@ interface DbChallenge {
   expires_at: string;
 }
 
-function hasUsers(): boolean {
+function hasUsersWithCredentials(): boolean {
   const db = getDb();
-  const row = db.prepare("SELECT COUNT(*) as count FROM users").get() as {
-    count: number;
-  };
+  const row = db.prepare(
+    "SELECT COUNT(*) as count FROM users u WHERE EXISTS (SELECT 1 FROM credentials c WHERE c.user_id = u.id)"
+  ).get() as { count: number };
   return row.count > 0;
 }
 
 // Registration options — only available if no users exist (setup) or authenticated
 auth.get("/registration/options", async (c) => {
   const db = getDb();
-  const setupMode = !hasUsers();
+  const setupMode = !hasUsersWithCredentials();
 
-  // For now, only allow registration during setup (no users)
+  // For now, only allow registration during setup (no users with credentials)
   if (!setupMode) {
     return c.json({ error: "Registration not available" }, 403);
   }
 
-  const userId = nanoid();
+  // Reuse existing admin user if one exists (e.g. after passkey reset)
+  const existingAdmin = db.prepare("SELECT id FROM users WHERE role = 'admin' LIMIT 1").get() as { id: string } | undefined;
+  const userId = existingAdmin?.id || nanoid();
   const options = await generateRegistrationOptions({
     rpName,
     rpID,
@@ -98,7 +100,7 @@ auth.get("/registration/options", async (c) => {
 
 // Verify registration
 auth.post("/registration/verify", async (c) => {
-  if (hasUsers()) {
+  if (hasUsersWithCredentials()) {
     return c.json({ error: "Registration not available" }, 403);
   }
 
@@ -140,9 +142,9 @@ auth.post("/registration/verify", async (c) => {
 
     const { credential, credentialDeviceType } = verification.registrationInfo;
 
-    // Create admin user
+    // Create admin user if they don't already exist (may exist after passkey reset)
     db.prepare(
-      "INSERT INTO users (id, username, role) VALUES (?, ?, 'admin')"
+      "INSERT OR IGNORE INTO users (id, username, role) VALUES (?, ?, 'admin')"
     ).run(pendingUserId, "admin");
 
     // Store credential
@@ -319,7 +321,7 @@ auth.post("/invite/verify", async (c) => {
 auth.get("/authentication/options", async (c) => {
   const db = getDb();
 
-  if (!hasUsers()) {
+  if (!hasUsersWithCredentials()) {
     return c.json({ error: "No users registered, go to /setup" }, 400);
   }
 
@@ -467,7 +469,7 @@ auth.post("/logout", async (c) => {
 
 // Setup check - is first-time setup needed?
 auth.get("/setup-needed", (c) => {
-  return c.json({ setupNeeded: !hasUsers() });
+  return c.json({ setupNeeded: !hasUsersWithCredentials() });
 });
 
 export default auth;

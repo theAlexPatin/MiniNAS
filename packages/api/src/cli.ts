@@ -334,6 +334,16 @@ user
   });
 
 user
+  .command("reset-passkeys")
+  .description("Remove all passkeys for a user (they can re-register on next login)")
+  .argument("<id>", "User ID")
+  .action(async (id: string) => {
+    const data = await api("POST", `/users/${id}/reset-passkeys`);
+    console.log(`Reset passkeys for '${data.username}' (removed ${data.removedCredentials} credential(s)).`);
+    console.log("They will be prompted to register a new passkey on next login.");
+  });
+
+user
   .command("delete")
   .description("Delete a user")
   .argument("<id>", "User ID")
