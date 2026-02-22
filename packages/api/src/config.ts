@@ -70,4 +70,6 @@ export const config = {
   auditLogDir:
     process.env.AUDIT_LOG_DIR ||
     path.join(os.homedir(), ".mininas", "logs", "audit"),
+  webDistDir: process.env.WEB_DIST_DIR || "",
+  version: process.env.MININAS_VERSION || "dev",
 } as const;

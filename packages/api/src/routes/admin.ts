@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
+import { spawn } from "node:child_process";
 import {
   listUsers,
   deleteUser,
@@ -15,6 +16,7 @@ import {
   deleteInvite,
 } from "../services/invites.js";
 import { getVolumeById } from "../services/volumes.js";
+import { config } from "../config.js";
 
 const admin = new Hono();
 
@@ -127,6 +129,23 @@ admin.delete("/volumes/:id/access/:userId", (c) => {
 
   revokeVolumeAccess(volumeId, userId);
   return c.json({ ok: true });
+});
+
+// --- Version & Update ---
+
+admin.get("/version", (c) => {
+  return c.json({ version: config.version });
+});
+
+admin.post("/update", async (c) => {
+  // Spawn detached upgrade + restart — returns immediately
+  const child = spawn("bash", ["-c", "brew upgrade mininas && brew services restart mininas"], {
+    detached: true,
+    stdio: "ignore",
+  });
+  child.unref();
+
+  return c.json({ ok: true, message: "Update started. The server will restart shortly." });
 });
 
 export default admin;

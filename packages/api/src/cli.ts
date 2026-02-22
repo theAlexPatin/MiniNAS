@@ -4,6 +4,7 @@ import { Command } from "commander";
 import crypto from "node:crypto";
 import { execSync, spawn } from "node:child_process";
 import fs from "node:fs";
+import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import readline from "node:readline";
@@ -181,6 +182,29 @@ function waitForEnter(message: string): Promise<void> {
       resolve();
     });
   });
+}
+
+// --- Port helpers ---
+
+function isPortAvailable(port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.once("error", () => resolve(false));
+    server.once("listening", () => {
+      server.close(() => resolve(true));
+    });
+    server.listen(port, "127.0.0.1");
+  });
+}
+
+async function findAvailablePort(preferred?: number): Promise<number> {
+  if (preferred && await isPortAvailable(preferred)) return preferred;
+  // IANA dynamic/private port range
+  for (let i = 0; i < 20; i++) {
+    const port = 49152 + Math.floor(Math.random() * (65535 - 49152));
+    if (await isPortAvailable(port)) return port;
+  }
+  throw new Error("Could not find an available port");
 }
 
 // --- Volume discovery (local) ---
@@ -510,10 +534,36 @@ invite
     console.log(`Deleted invite: ${id}`);
   });
 
+// --- Database helpers (direct SQLite access, no server needed) ---
+
+async function checkHasAdminUser(): Promise<boolean> {
+  const dbPath = path.join(configDir, "data", "mininas.db");
+  if (!fs.existsSync(dbPath)) return false;
+  try {
+    const { default: Database } = await import("better-sqlite3");
+    const db = new Database(dbPath, { readonly: true });
+    const row = db.prepare(
+      "SELECT COUNT(*) as count FROM users u JOIN credentials c ON c.user_id = u.id"
+    ).get() as { count: number } | undefined;
+    db.close();
+    return (row?.count ?? 0) > 0;
+  } catch {
+    return false;
+  }
+}
+
 // --- Setup command ---
 
 async function runSetup(): Promise<void> {
   console.log("\n  MiniNAS Setup\n");
+
+  // 0. Check if admin user already exists
+  if (await checkHasAdminUser()) {
+    console.log("  An admin user is already registered.");
+    console.log("  If you want to start over, run: mininas start-fresh");
+    console.log("  To reconfigure Tailscale, the existing setup is preserved.\n");
+    return;
+  }
 
   // 1. Check Tailscale installed
   console.log("Checking Tailscale installation...");
@@ -618,21 +668,22 @@ async function runSetup(): Promise<void> {
     cfg.CLI_SECRET = existingCli;
   }
 
-  cfg.PORT = existing.PORT || "3001";
+  cfg.PORT = existing.PORT || String(await findAvailablePort());
   cfg.RP_NAME = "MiniNAS";
   cfg.BASE_URL = `https://${hostname}`;
-  cfg.PUBLIC_SHARE_PORT = "3002";
+  cfg.PUBLIC_SHARE_PORT = existing.PUBLIC_SHARE_PORT || String(await findAvailablePort());
   cfg.PUBLIC_SHARE_URL = `https://${hostname}:8443`;
 
   // 7. Write config
   writeConfigFile(cfg);
   console.log(`  Written to ${configPath}`);
 
-  // 8. Configure Tailscale Serve
+  // 8. Configure Tailscale Serve (single-process: API serves both API + web)
   console.log("\nConfiguring Tailscale Serve...");
-  const serveResult = exec("tailscale serve --bg 4321");
+  const servePort = cfg.PORT || "3001";
+  const serveResult = exec(`tailscale serve --bg ${servePort}`);
   if (serveResult.ok) {
-    console.log("  Serve: https → localhost:4321");
+    console.log(`  Serve: https → localhost:${servePort}`);
   } else {
     console.log(`  Warning: Could not configure Tailscale Serve.`);
     console.log(`  ${serveResult.stderr}`);
@@ -640,9 +691,10 @@ async function runSetup(): Promise<void> {
 
   // 9. Configure Tailscale Funnel
   console.log("Configuring Tailscale Funnel...");
-  const funnelResult = exec("tailscale funnel --bg --https=8443 3002");
+  const sharePort = cfg.PUBLIC_SHARE_PORT || "3002";
+  const funnelResult = exec(`tailscale funnel --bg --https=8443 ${sharePort}`);
   if (funnelResult.ok) {
-    console.log("  Funnel: :8443 → localhost:3002");
+    console.log(`  Funnel: :8443 → localhost:${sharePort}`);
   } else {
     console.log("  Warning: Could not configure Tailscale Funnel.");
     console.log(`  ${funnelResult.stderr}`);
@@ -660,9 +712,9 @@ async function runSetup(): Promise<void> {
   Public:     https://${hostname}:8443
 
   Next steps:
-    1. Start the dev server:  pnpm dev
-    2. Register your passkey at ${setupUrl}
-    3. Add volumes:  pnpm mininas volume add
+    1. Start the server:   brew services start mininas
+    2. Register passkey at ${setupUrl}
+    3. Add volumes:        mininas volume add
 `);
 
   // Open the setup page in the default browser
@@ -713,10 +765,11 @@ program
     const cfg = readMergedConfig();
     const sharePort = cfg.PUBLIC_SHARE_PORT || "3002";
 
+    const apiPort = cfg.PORT || "3001";
     console.log();
     if (serveConfigured) {
       console.log(`  Web App:   https://${hostname}`);
-      console.log(`             Tailscale Serve → localhost:4321`);
+      console.log(`             Tailscale Serve → localhost:${apiPort}`);
       console.log();
       console.log(`  WebDAV:    https://${hostname}/dav/`);
       console.log(`             (same origin)`);
@@ -737,6 +790,119 @@ program
       console.log("  Run 'mininas setup' to configure.");
     }
     console.log();
+  });
+
+// --- Server command ---
+
+program
+  .command("server")
+  .description("Start the MiniNAS server (used by brew services)")
+  .action(async () => {
+    const serverPath = path.join(__dirname, "index.js");
+    if (!fs.existsSync(serverPath)) {
+      console.error(`Server file not found: ${serverPath}`);
+      console.error("Run 'pnpm build' first or install via Homebrew.");
+      process.exit(1);
+    }
+
+    console.log("Starting MiniNAS server...");
+    const { fork } = await import("node:child_process");
+    const child = fork(serverPath, [], {
+      stdio: "inherit",
+      env: { ...process.env },
+    });
+
+    child.on("exit", (code) => {
+      process.exit(code ?? 1);
+    });
+
+    // Forward signals to child
+    for (const signal of ["SIGINT", "SIGTERM"] as const) {
+      process.on(signal, () => {
+        child.kill(signal);
+      });
+    }
+  });
+
+// --- Start-fresh command ---
+
+program
+  .command("start-fresh")
+  .description("Wipe all data and re-run setup")
+  .action(async () => {
+    console.log("\n  This will delete ALL MiniNAS data including:");
+    console.log("    - Database (users, volumes, settings)");
+    console.log("    - Thumbnails and upload staging");
+    console.log("    - Logs");
+    console.log("    - Configuration\n");
+    console.log("  Your actual files on mounted volumes will NOT be deleted.\n");
+
+    const answer = await prompt("  Type 'yes' to confirm: ");
+    if (answer !== "yes") {
+      console.log("  Aborted.");
+      return;
+    }
+
+    // Stop running server if detected
+    console.log("\nStopping MiniNAS service...");
+    exec("brew services stop mininas");
+
+    // Remove data directories
+    const dataDir = path.join(configDir, "data");
+    const logsDir = path.join(configDir, "logs");
+
+    for (const dir of [dataDir, logsDir]) {
+      if (fs.existsSync(dir)) {
+        fs.rmSync(dir, { recursive: true, force: true });
+        console.log(`  Removed ${dir}`);
+      }
+    }
+
+    if (fs.existsSync(configPath)) {
+      fs.unlinkSync(configPath);
+      console.log(`  Removed ${configPath}`);
+    }
+
+    console.log();
+
+    // Re-run setup
+    await runSetup();
+  });
+
+// --- Uninstall command ---
+
+program
+  .command("uninstall")
+  .description("Remove all MiniNAS data and configuration")
+  .action(async () => {
+    console.log("\n  This will permanently delete ALL MiniNAS data:");
+    console.log(`    ${configDir}/`);
+    console.log("\n  Your actual files on mounted volumes will NOT be deleted.\n");
+
+    const answer = await prompt("  Type 'yes' to confirm: ");
+    if (answer !== "yes") {
+      console.log("  Aborted.");
+      return;
+    }
+
+    // Stop running server
+    console.log("\nStopping MiniNAS service...");
+    exec("brew services stop mininas");
+
+    // Reset Tailscale Serve
+    console.log("Resetting Tailscale Serve...");
+    exec("tailscale serve reset");
+
+    // Remove all data
+    if (fs.existsSync(configDir)) {
+      fs.rmSync(configDir, { recursive: true, force: true });
+      console.log(`Removed ${configDir}/`);
+    }
+
+    console.log(`
+  MiniNAS data has been removed.
+  To also remove the application: brew uninstall mininas
+`);
   });
 
 // --- Run ---

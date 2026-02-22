@@ -16,6 +16,7 @@ import {
   ArrowLeft,
   HardDrive,
 } from "lucide-react";
+import UpdateSection from "./UpdateSection";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
@@ -238,6 +239,13 @@ function WebDAVTokensInner() {
           </div>
         )}
       </div>
+
+      {/* Software Update (admin only) */}
+      {user?.role === "admin" && (
+        <div className="mt-6">
+          <UpdateSection />
+        </div>
+      )}
     </div>
   );
 }
