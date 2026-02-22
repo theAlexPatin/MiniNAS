@@ -1,11 +1,27 @@
 import dotenv from "dotenv";
+import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// Load .env from monorepo root
+
+// Load config: .env overrides ~/.mininas/config.json, real env vars override both.
+// dotenv won't override existing env vars, so we load .env first (higher priority),
+// then backfill from config.json (lower priority).
 dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
+
+const globalConfigPath = path.join(os.homedir(), ".mininas", "config.json");
+if (fs.existsSync(globalConfigPath)) {
+  try {
+    const json = JSON.parse(fs.readFileSync(globalConfigPath, "utf-8"));
+    for (const [key, value] of Object.entries(json)) {
+      if (typeof value === "string" && !(key in process.env)) {
+        process.env[key] = value;
+      }
+    }
+  } catch {}
+}
 
 const dataDir = path.join(os.homedir(), ".mininas", "data");
 
