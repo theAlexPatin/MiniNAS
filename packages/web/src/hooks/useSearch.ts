@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { withBase } from "../lib/basePath";
 
 interface SearchResult {
   id: number;
@@ -16,7 +17,7 @@ async function searchFiles(query: string, volume?: string): Promise<{ results: S
   const params = new URLSearchParams({ q: query });
   if (volume) params.set("volume", volume);
 
-  const res = await fetch(`/api/v1/search?${params}`, { credentials: "include" });
+  const res = await fetch(withBase(`/api/v1/search?${params}`), { credentials: "include" });
   if (!res.ok) throw new Error("Search failed");
   return res.json();
 }

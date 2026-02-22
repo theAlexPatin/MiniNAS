@@ -12,6 +12,7 @@ import SearchBar from "./SearchBar";
 import PreviewModal from "./PreviewModal";
 import ShareDialog from "./ShareDialog";
 import type { FileEntry } from "../lib/api";
+import { BASE_PATH, withBase } from "../lib/basePath";
 import { ChevronRight, Home, FolderPlus, RefreshCw, Loader2, LogOut, Upload, LayoutGrid, List, Settings, UploadCloud } from "lucide-react";
 import { getFilesFromDataTransfer } from "../lib/drop";
 
@@ -22,7 +23,11 @@ const queryClient = new QueryClient({
 });
 
 function parsePath(pathname: string): { volume: string; path: string } {
-  const match = pathname.match(/^\/volumes\/([^/]+)(?:\/(.*))?$/);
+  let p = pathname;
+  if (BASE_PATH && p.startsWith(BASE_PATH)) {
+    p = p.slice(BASE_PATH.length);
+  }
+  const match = p.match(/^\/volumes\/([^/]+)(?:\/(.*))?$/);
   if (!match) return { volume: "", path: "" };
   return {
     volume: decodeURIComponent(match[1]),
@@ -38,7 +43,7 @@ function buildUrl(vol: string, pathStr: string): string {
       url += "/" + pathStr.split("/").map(encodeURIComponent).join("/");
     }
   }
-  return url;
+  return withBase(url);
 }
 
 function FileBrowserInner() {
@@ -175,7 +180,7 @@ function FileBrowserInner() {
   }
 
   if (!isAuthenticated) {
-    if (typeof window !== "undefined") window.location.href = "/login";
+    if (typeof window !== "undefined") window.location.href = withBase("/login");
     return null;
   }
 
@@ -193,7 +198,7 @@ function FileBrowserInner() {
           onSelect={handleVolumeSelect}
         />
         <a
-          href="/settings"
+          href={withBase("/settings")}
           className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
           title="Settings"
         >

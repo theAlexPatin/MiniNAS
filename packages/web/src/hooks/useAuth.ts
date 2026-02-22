@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { checkSession, logout as logoutFn } from "../lib/passkeys";
+import { withBase } from "../lib/basePath";
 
 export function useAuth() {
   const queryClient = useQueryClient();
@@ -17,7 +18,7 @@ export function useAuth() {
       authenticated: false,
       user: null,
     });
-    window.location.href = "/login";
+    window.location.href = withBase("/login");
   };
 
   return {

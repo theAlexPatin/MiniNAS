@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { registerPasskey, checkSetupNeeded } from "../lib/passkeys";
+import { withBase } from "../lib/basePath";
 import { Fingerprint, Loader2, CheckCircle, ShieldX } from "lucide-react";
 
 export default function PasskeySetup() {
@@ -25,7 +26,7 @@ export default function PasskeySetup() {
       if (verified) {
         setStatus("success");
         setTimeout(() => {
-          window.location.href = "/";
+          window.location.href = withBase("/");
         }, 1000);
       } else {
         setStatus("error");
@@ -63,7 +64,7 @@ export default function PasskeySetup() {
               <ShieldX size={48} className="mx-auto mb-3 text-red-400" />
               <p className="text-sm text-gray-500 mt-2">
                 If you need to log in, go to the{" "}
-                <a href="/login" className="text-brand-600 hover:text-brand-700 font-medium">
+                <a href={withBase("/login")} className="text-brand-600 hover:text-brand-700 font-medium">
                   login page
                 </a>.
               </p>

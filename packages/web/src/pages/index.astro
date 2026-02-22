@@ -3,5 +3,5 @@ import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout title="MiniNAS">
-  <script is:inline>window.location.replace("/volumes");</script>
+  <script is:inline>window.location.replace((window.__BASE_PATH__ || "") + "/volumes");</script>
 </Layout>

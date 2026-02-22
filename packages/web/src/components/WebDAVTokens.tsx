@@ -17,6 +17,7 @@ import {
   HardDrive,
 } from "lucide-react";
 import UpdateSection from "./UpdateSection";
+import { withBase } from "../lib/basePath";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
@@ -51,7 +52,7 @@ function WebDAVTokensInner() {
   }
 
   if (!isAuthenticated) {
-    if (typeof window !== "undefined") window.location.href = "/login";
+    if (typeof window !== "undefined") window.location.href = withBase("/login");
     return null;
   }
 
@@ -75,7 +76,7 @@ function WebDAVTokensInner() {
   };
 
   const serverUrl = typeof window !== "undefined"
-    ? `${window.location.protocol}//${window.location.host}/dav/`
+    ? `${window.location.protocol}//${window.location.host}${withBase("/dav/")}`
     : "";
 
   return (
@@ -83,7 +84,7 @@ function WebDAVTokensInner() {
       {/* Header */}
       <div className="flex items-center gap-3 mb-8">
         <a
-          href="/"
+          href={withBase("/")}
           className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
           title="Back to files"
         >

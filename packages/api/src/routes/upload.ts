@@ -12,7 +12,7 @@ import { audit } from "../services/audit-log.js";
 fs.mkdirSync(config.uploadStagingDir, { recursive: true });
 
 const tusServer = new Server({
-  path: "/api/v1/upload",
+  path: `${config.basePath}/api/v1/upload`,
   datastore: new FileStore({
     directory: config.uploadStagingDir,
   }),
@@ -101,7 +101,13 @@ upload.all("/*", async (c) => {
   }
 
   const origin = c.req.header("origin");
-  if (origin === config.rp.origin) {
+  const host = c.req.header("Host");
+  const allowedOrigin = origin && (
+    origin === config.rp.origin ||
+    (config.baseUrl && origin === config.baseUrl) ||
+    (host && origin === `${c.req.header("X-Forwarded-Proto") || "https"}://${host}`)
+  );
+  if (origin && allowedOrigin) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Access-Control-Allow-Credentials", "true");
     res.setHeader(

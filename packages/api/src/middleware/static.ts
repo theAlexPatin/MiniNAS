@@ -1,6 +1,7 @@
 import { createMiddleware } from "hono/factory";
 import fs from "node:fs";
 import path from "node:path";
+import { config } from "../config.js";
 
 const mimeTypes: Record<string, string> = {
   ".html": "text/html",
@@ -38,6 +39,8 @@ function tryFile(distDir: string, urlPath: string): string | null {
 }
 
 export function createStaticMiddleware(distDir: string) {
+  const bp = config.basePath;
+
   return createMiddleware(async (c, next) => {
     // Only handle GET/HEAD
     if (c.req.method !== "GET" && c.req.method !== "HEAD") {
@@ -45,7 +48,12 @@ export function createStaticMiddleware(distDir: string) {
     }
 
     const url = new URL(c.req.url);
-    const pathname = url.pathname;
+    let pathname = url.pathname;
+
+    // Strip basePath prefix before file lookup
+    if (bp && pathname.startsWith(bp)) {
+      pathname = pathname.slice(bp.length) || "/";
+    }
 
     // Skip API and WebDAV routes
     if (pathname.startsWith("/api/") || pathname.startsWith("/dav/") || pathname.startsWith("/dav")) {
@@ -71,13 +79,31 @@ export function createStaticMiddleware(distDir: string) {
 
     const ext = path.extname(filePath);
     const mime = mimeTypes[ext] || "application/octet-stream";
-    const body = fs.readFileSync(filePath);
+    const raw = fs.readFileSync(filePath);
     const cacheControl =
       ext === ".html"
         ? "no-cache"
         : "public, max-age=31536000, immutable";
 
-    return c.body(body, 200, {
+    // For HTML files: inject __BASE_PATH__ and rewrite asset references
+    if (ext === ".html") {
+      let html = raw.toString("utf-8");
+      html = html.replace(
+        "<head>",
+        `<head><script>window.__BASE_PATH__="${bp}";</script>`
+      );
+      if (bp) {
+        // Rewrite Astro-generated asset references
+        html = html.replace(/href="\//g, `href="${bp}/`);
+        html = html.replace(/src="\//g, `src="${bp}/`);
+      }
+      return c.text(html, 200, {
+        "Content-Type": mime,
+        "Cache-Control": cacheControl,
+      });
+    }
+
+    return c.body(raw, 200, {
       "Content-Type": mime,
       "Cache-Control": cacheControl,
     });

@@ -21,7 +21,11 @@ import { webdavAuthMiddleware } from "./middleware/webdav-auth.js";
 import webdavRoutes from "./routes/webdav.js";
 import webdavTokenRoutes from "./routes/webdav-tokens.js";
 
-const app = new Hono();
+import { config } from "./config.js";
+
+const app = config.basePath
+  ? new Hono().basePath(config.basePath)
+  : new Hono();
 
 // Global middleware
 app.use("*", logger());
@@ -100,7 +104,6 @@ cleanupOldLogs();
 setInterval(cleanupOldLogs, 24 * 60 * 60 * 1000);
 
 // Static file serving (production single-process mode)
-import { config } from "./config.js";
 import { createStaticMiddleware } from "./middleware/static.js";
 
 if (config.webDistDir) {

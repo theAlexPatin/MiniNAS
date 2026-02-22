@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { X, Copy, Check, Link2, Loader2 } from "lucide-react";
 import type { FileEntry } from "../lib/api";
+import { withBase } from "../lib/basePath";
 
 interface ShareDialogProps {
   file: FileEntry;
@@ -22,7 +23,7 @@ export default function ShareDialog({ file, volume, onClose }: ShareDialogProps)
     setCreating(true);
     setError("");
     try {
-      const res = await fetch("/api/v1/share", {
+      const res = await fetch(withBase("/api/v1/share"), {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -42,7 +43,7 @@ export default function ShareDialog({ file, volume, onClose }: ShareDialogProps)
       }
 
       const data = await res.json();
-      const url = data.url || `${window.location.origin}/api/v1/share/${data.share.id}/download`;
+      const url = data.url || `${window.location.origin}${withBase(`/api/v1/share/${data.share.id}/download`)}`;
       setShareUrl(url);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create share");

@@ -33,6 +33,13 @@ export interface VolumeConfig {
 
 const baseUrl = process.env.BASE_URL || "";
 
+function normalizeBasePath(raw: string): string {
+  if (!raw) return "";
+  let p = raw.trim();
+  if (!p.startsWith("/")) p = "/" + p;
+  return p.replace(/\/+$/, "");
+}
+
 // Auto-derive RP settings from BASE_URL when not explicitly set
 function deriveRpId(): string {
   if (process.env.RP_ID) return process.env.RP_ID;
@@ -71,5 +78,6 @@ export const config = {
     process.env.AUDIT_LOG_DIR ||
     path.join(os.homedir(), ".mininas", "logs", "audit"),
   webDistDir: process.env.WEB_DIST_DIR || "",
+  basePath: normalizeBasePath(process.env.BASE_PATH || ""),
   version: process.env.MININAS_VERSION || "dev",
 } as const;

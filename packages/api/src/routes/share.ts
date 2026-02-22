@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { Context } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { stream } from "hono/streaming";
 import fs from "node:fs";
@@ -16,15 +17,14 @@ import {
   listUserShares,
   deleteShareLink,
 } from "../services/share.js";
+import { getBaseUrl } from "../lib/url.js";
 
-function getShareUrl(shareId: string, isPublic: boolean): string | null {
+function getShareUrl(c: Context, shareId: string, isPublic: boolean): string | null {
   if (isPublic && config.publicShareUrl) {
     return `${config.publicShareUrl}/s/${shareId}`;
   }
-  if (config.baseUrl) {
-    return `${config.baseUrl}/api/v1/share/${shareId}/download`;
-  }
-  return null;
+  const base = getBaseUrl(c);
+  return `${base}/api/v1/share/${shareId}/download`;
 }
 
 const share = new Hono();
@@ -111,7 +111,7 @@ share.post(
       isPublic: body.isPublic,
     });
 
-    const url = getShareUrl(link.id, !!link.is_public);
+    const url = getShareUrl(c, link.id, !!link.is_public);
     return c.json({ share: link, ...(url ? { url } : {}) }, 201);
   }
 );
@@ -122,7 +122,7 @@ share.get("/", authMiddleware, async (c) => {
   const shares = listUserShares(session.sub);
   const sharesWithUrls = shares.map((s) => ({
     ...s,
-    url: getShareUrl(s.id, !!s.is_public),
+    url: getShareUrl(c, s.id, !!s.is_public),
   }));
   return c.json({ shares: sharesWithUrls });
 });

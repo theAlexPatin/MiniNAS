@@ -6,6 +6,15 @@ const dist = new URL("./dist", import.meta.url).pathname;
 const port = parseInt(process.argv.find((a) => a.match(/^\d+$/)) || "4321");
 const host = process.argv.includes("--host") ? "0.0.0.0" : "127.0.0.1";
 
+// Optional base path support
+function normalizeBasePath(raw) {
+  if (!raw) return "";
+  let p = raw.trim();
+  if (!p.startsWith("/")) p = "/" + p;
+  return p.replace(/\/+$/, "");
+}
+const basePath = normalizeBasePath(process.env.BASE_PATH || "");
+
 const mimeTypes = {
   ".html": "text/html",
   ".js": "application/javascript",
@@ -33,10 +42,17 @@ function tryFile(urlPath) {
 
 createServer((req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
-  let filePath = tryFile(url.pathname);
+  let pathname = url.pathname;
+
+  // Strip basePath before file lookup
+  if (basePath && pathname.startsWith(basePath)) {
+    pathname = pathname.slice(basePath.length) || "/";
+  }
+
+  let filePath = tryFile(pathname);
 
   // SPA fallback: /volumes/X/Y/Z -> /volumes/index.html
-  if (!filePath && url.pathname.startsWith("/volumes/") && !extname(url.pathname)) {
+  if (!filePath && pathname.startsWith("/volumes/") && !extname(pathname)) {
     filePath = join(dist, "volumes", "index.html");
   }
 
@@ -48,12 +64,28 @@ createServer((req, res) => {
 
   const ext = extname(filePath);
   const mime = mimeTypes[ext] || "application/octet-stream";
-  const body = readFileSync(filePath);
+  let body = readFileSync(filePath);
+
+  // Inject __BASE_PATH__ into HTML files
+  if (ext === ".html") {
+    let html = body.toString("utf-8");
+    html = html.replace(
+      "<head>",
+      `<head><script>window.__BASE_PATH__="${basePath}";</script>`
+    );
+    if (basePath) {
+      html = html.replace(/href="\//g, `href="${basePath}/`);
+      html = html.replace(/src="\//g, `src="${basePath}/`);
+    }
+    body = html;
+  }
+
   res.writeHead(200, {
     "Content-Type": mime,
     "Cache-Control": ext === ".html" ? "no-cache" : "public, max-age=31536000, immutable",
   });
   res.end(body);
 }).listen(port, host, () => {
-  console.log(`Preview server: http://${host}:${port}/`);
+  const prefix = basePath || "";
+  console.log(`Preview server: http://${host}:${port}${prefix}/`);
 });

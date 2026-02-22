@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { authenticatePasskey } from "../lib/passkeys";
+import { withBase } from "../lib/basePath";
 import { Fingerprint, Loader2 } from "lucide-react";
 
 export default function PasskeyLogin() {
@@ -12,7 +13,7 @@ export default function PasskeyLogin() {
     try {
       const verified = await authenticatePasskey();
       if (verified) {
-        window.location.href = "/";
+        window.location.href = withBase("/");
       } else {
         setStatus("error");
         setError("Authentication was not verified");

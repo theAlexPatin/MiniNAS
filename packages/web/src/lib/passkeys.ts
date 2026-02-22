@@ -2,8 +2,9 @@ import {
   startRegistration,
   startAuthentication,
 } from "@simplewebauthn/browser";
+import { withBase } from "./basePath";
 
-const API_BASE = "/api/v1/auth";
+const API_BASE = withBase("/api/v1/auth");
 
 export async function registerPasskey(): Promise<boolean> {
   // Get registration options

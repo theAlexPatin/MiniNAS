@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import * as tus from "tus-js-client";
+import { withBase } from "../lib/basePath";
 
 export interface UploadItem {
   id: string;
@@ -28,7 +29,7 @@ export function useUpload(volume: string, directory: string, onComplete?: () => 
       const newUploads: UploadItem[] = files.map((file) => {
         const id = `upload-${++idCounter.current}`;
         const upload = new tus.Upload(file, {
-          endpoint: "/api/v1/upload/",
+          endpoint: withBase("/api/v1/upload/"),
           retryDelays: [0, 3000, 5000, 10000, 20000],
           chunkSize: 5 * 1024 * 1024, // 5MB chunks
           metadata: {

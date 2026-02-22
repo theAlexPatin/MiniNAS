@@ -1,4 +1,6 @@
-const API_BASE = "/api/v1";
+import { withBase } from "./basePath";
+
+const API_BASE = withBase("/api/v1");
 
 /** Encode each segment of a file path for use in URLs */
 function encodePath(filePath: string): string {
