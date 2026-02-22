@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsup src/index.ts src/cli.ts --format esm --dts",
+    "build": "tsup src/index.ts src/cli.ts --format esm --dts && cp src/db/schema.sql dist/schema.sql",
     "start": "node dist/index.js"
   },
   "dependencies": {
