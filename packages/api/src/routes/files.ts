@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
+import path from "node:path";
 import { zValidator } from "@hono/zod-validator";
 import {
   getVolume,
@@ -10,6 +11,7 @@ import {
   createDirectory,
 } from "../services/filesystem.js";
 import { MoveRequestSchema, MkdirRequestSchema } from "../types/api.js";
+import { audit } from "../services/audit-log.js";
 
 const files = new Hono();
 
@@ -70,6 +72,7 @@ files.delete("/:volumeId/*", async (c) => {
   }
 
   await deleteEntry(volume, relativePath);
+  audit({ action: "file.delete", userId: session.sub, source: "api", volumeId, path: relativePath });
   return c.json({ ok: true });
 });
 
@@ -94,6 +97,7 @@ files.patch(
     }
 
     await moveEntry(volume, relativePath, destination);
+    audit({ action: "file.move", userId: session.sub, source: "api", volumeId, path: relativePath, dest: destination });
     return c.json({ ok: true });
   }
 );
@@ -110,6 +114,7 @@ files.post(
     const { name } = c.req.valid("json");
 
     await createDirectory(volume, ".", name);
+    audit({ action: "dir.create", userId: session.sub, source: "api", volumeId, path: name });
     return c.json({ ok: true }, 201);
   }
 );
@@ -125,6 +130,7 @@ files.post(
     const { name } = c.req.valid("json");
 
     await createDirectory(volume, relativePath || ".", name);
+    audit({ action: "dir.create", userId: session.sub, source: "api", volumeId, path: path.join(relativePath || ".", name) });
     return c.json({ ok: true }, 201);
   }
 );

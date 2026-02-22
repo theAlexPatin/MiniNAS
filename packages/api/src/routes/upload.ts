@@ -6,6 +6,7 @@ import path from "node:path";
 import { config } from "../config.js";
 import { getVolume, resolveVolumePath } from "../services/filesystem.js";
 import { canAccessVolume } from "../services/access.js";
+import { audit } from "../services/audit-log.js";
 
 // Ensure staging directory exists
 fs.mkdirSync(config.uploadStagingDir, { recursive: true });
@@ -51,6 +52,9 @@ const tusServer = new Server({
       if (fs.existsSync(metaPath)) {
         fs.unlinkSync(metaPath);
       }
+
+      const userId = (req as any).__userId || "unknown";
+      audit({ action: "file.create", userId, source: "upload", volumeId, path: path.join(targetDir, fileDest) });
     } catch (err) {
       console.error("Error moving uploaded file:", err);
     }
@@ -88,6 +92,12 @@ upload.all("/*", async (c) => {
 
   if (!req || !res) {
     return c.json({ error: "Upload requires Node.js server" }, 500);
+  }
+
+  // Stash userId on raw request so TUS onUploadFinish can access it
+  const session = c.get("session" as never) as { sub: string } | undefined;
+  if (session?.sub) {
+    (req as any).__userId = session.sub;
   }
 
   const origin = c.req.header("origin");

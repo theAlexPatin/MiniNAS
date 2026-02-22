@@ -29,4 +29,7 @@ export const config = {
   uploadStagingDir:
     process.env.UPLOAD_STAGING_DIR || path.join(dataDir, "uploads"),
   cliSecret: process.env.CLI_SECRET || "",
+  auditLogDir:
+    process.env.AUDIT_LOG_DIR ||
+    path.join(os.homedir(), ".mininas", "logs", "audit"),
 } as const;

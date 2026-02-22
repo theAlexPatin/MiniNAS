@@ -18,6 +18,7 @@ import {
 } from "../services/filesystem.js";
 import { getVolumes } from "../services/volumes.js";
 import { getAccessibleVolumeIds } from "../services/access.js";
+import { audit } from "../services/audit-log.js";
 import {
   multistatus,
   lockResponse,
@@ -387,6 +388,7 @@ webdav.put("/*", async (c) => {
     await fsPromises.writeFile(filePath, "");
   }
 
+  audit({ action: "file.create", userId: session.sub, source: "webdav", volumeId, path: relativePath });
   return c.body(null, existed ? 204 : 201);
 });
 
@@ -403,6 +405,7 @@ webdav.delete("/*", async (c) => {
 
   const volume = getVolume(volumeId, session.sub);
   await deleteEntry(volume, relativePath || ".");
+  audit({ action: "file.delete", userId: session.sub, source: "webdav", volumeId, path: relativePath || "." });
   return c.body(null, 204);
 });
 
@@ -422,6 +425,7 @@ webdav.on("MKCOL", "/*", async (c) => {
   const parentPath = path.dirname(relativePath);
 
   await createDirectory(volume, parentPath === "." ? "" : parentPath, name);
+  audit({ action: "dir.create", userId: session.sub, source: "webdav", volumeId, path: relativePath });
   return c.body(null, 201);
 });
 
@@ -448,6 +452,7 @@ webdav.on("MOVE", "/*", async (c) => {
 
   const volume = getVolume(volumeId, session.sub);
   await moveEntry(volume, relativePath || ".", dest.relativePath);
+  audit({ action: "file.move", userId: session.sub, source: "webdav", volumeId, path: relativePath || ".", dest: dest.relativePath });
   return c.body(null, 204);
 });
 
@@ -474,6 +479,7 @@ webdav.on("COPY", "/*", async (c) => {
 
   const volume = getVolume(volumeId, session.sub);
   await copyEntry(volume, relativePath || ".", dest.relativePath);
+  audit({ action: "file.copy", userId: session.sub, source: "webdav", volumeId, path: relativePath || ".", dest: dest.relativePath });
   return c.body(null, 201);
 });
 

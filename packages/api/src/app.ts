@@ -10,6 +10,7 @@ import filesRoutes from "./routes/files.js";
 import downloadRoutes from "./routes/download.js";
 import volumesRoutes from "./routes/volumes.js";
 import uploadRoutes, { cleanupStagingDir } from "./routes/upload.js";
+import { cleanupOldLogs } from "./services/audit-log.js";
 import searchRoutes from "./routes/search.js";
 import previewRoutes from "./routes/preview.js";
 import shareRoutes from "./routes/share.js";
@@ -80,6 +81,10 @@ app.route("", dav);
 
 // Hourly cleanup of abandoned uploads
 setInterval(cleanupStagingDir, 60 * 60 * 1000);
+
+// Audit log: delete files older than 90 days on startup + daily
+cleanupOldLogs();
+setInterval(cleanupOldLogs, 24 * 60 * 60 * 1000);
 
 // Global error handler
 app.onError((err, c) => {
