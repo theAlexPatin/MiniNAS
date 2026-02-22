@@ -134,4 +134,12 @@ export const api = {
   revokeWebDAVToken(id: string): Promise<{ ok: boolean }> {
     return request(`/webdav-tokens/${id}`, { method: "DELETE" });
   },
+
+  getVersion(): Promise<{ version: string }> {
+    return request("/admin/version");
+  },
+
+  triggerUpdate(): Promise<{ ok: boolean; message: string }> {
+    return request("/admin/update", { method: "POST" });
+  },
 };

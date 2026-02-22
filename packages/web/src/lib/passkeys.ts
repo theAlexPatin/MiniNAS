@@ -69,7 +69,7 @@ export async function authenticatePasskey(): Promise<boolean> {
 
 export async function checkSession(): Promise<{
   authenticated: boolean;
-  user: { id: string; username: string } | null;
+  user: { id: string; username: string; role: string } | null;
 }> {
   const res = await fetch(`${API_BASE}/session`, { credentials: "include" });
   return res.json();

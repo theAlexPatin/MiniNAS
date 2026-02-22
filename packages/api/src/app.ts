@@ -99,6 +99,14 @@ setInterval(cleanupStagingDir, 60 * 60 * 1000);
 cleanupOldLogs();
 setInterval(cleanupOldLogs, 24 * 60 * 60 * 1000);
 
+// Static file serving (production single-process mode)
+import { config } from "./config.js";
+import { createStaticMiddleware } from "./middleware/static.js";
+
+if (config.webDistDir) {
+  app.use("*", createStaticMiddleware(config.webDistDir));
+}
+
 // Global error handler
 app.onError((err, c) => {
   if (err instanceof HTTPException) {
