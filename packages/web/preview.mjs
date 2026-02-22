@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import { join, extname } from "node:path";
 
 const dist = new URL("./dist", import.meta.url).pathname;
@@ -19,13 +19,15 @@ const mimeTypes = {
   ".ico": "image/x-icon",
 };
 
+function isFile(p) {
+  try { return statSync(p).isFile(); } catch { return false; }
+}
+
 function tryFile(urlPath) {
-  // Try exact path
   let file = join(dist, urlPath);
-  if (existsSync(file) && !file.endsWith("/")) return file;
-  // Try with index.html
+  if (isFile(file)) return file;
   file = join(dist, urlPath, "index.html");
-  if (existsSync(file)) return file;
+  if (isFile(file)) return file;
   return null;
 }
 
