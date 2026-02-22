@@ -3,6 +3,15 @@ import react from "@astrojs/react";
 import tailwind from "@astrojs/tailwind";
 import http from "node:http";
 
+// Rewrite /volumes/X/Y/Z to /volumes so the catch-all [...path].astro
+// page is served for all sub-paths (used in both dev and preview).
+function volumesFallback(req, _res, next) {
+  if (req.url && req.url.startsWith("/volumes/") && !req.url.includes(".")) {
+    req.url = "/volumes";
+  }
+  next();
+}
+
 export default defineConfig({
   devToolbar: { enabled: false },
   integrations: [react(), tailwind()],
@@ -12,18 +21,7 @@ export default defineConfig({
       {
         name: "volumes-spa-fallback",
         configureServer(server) {
-          // Rewrite /volumes/X/Y/Z to /volumes so Astro serves the
-          // catch-all [...path].astro page for all sub-paths in dev mode.
-          server.middlewares.use((req, _res, next) => {
-            if (
-              req.url &&
-              req.url.startsWith("/volumes/") &&
-              !req.url.includes(".")
-            ) {
-              req.url = "/volumes";
-            }
-            next();
-          });
+          server.middlewares.use(volumesFallback);
         },
       },
       {

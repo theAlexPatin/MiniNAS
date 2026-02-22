@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview --host 0.0.0.0 --allowed-hosts all"
+    "preview": "node preview.mjs --host"
   },
   "dependencies": {
     "astro": "^5.3.0",
