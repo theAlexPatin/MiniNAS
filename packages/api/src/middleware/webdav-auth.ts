@@ -3,6 +3,11 @@ import { HTTPException } from "hono/http-exception";
 import { verifyToken } from "../services/webdav-tokens.js";
 
 export const webdavAuthMiddleware = createMiddleware(async (c, next) => {
+  // Allow unauthenticated OPTIONS so clients can discover DAV capabilities
+  if (c.req.method === "OPTIONS") {
+    return next();
+  }
+
   const authHeader = c.req.header("Authorization");
 
   if (!authHeader || !authHeader.startsWith("Basic ")) {

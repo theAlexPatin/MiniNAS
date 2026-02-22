@@ -75,9 +75,22 @@ app.route("/api/v1/cli", cliApi);
 
 // WebDAV (Basic Auth with app tokens)
 const dav = new Hono();
+dav.onError((err, c) => {
+  if (err instanceof HTTPException) {
+    return c.body(err.message, err.status);
+  }
+  console.error("WebDAV error:", err);
+  return c.body("Internal Server Error", 500);
+});
+dav.use("*", async (c, next) => {
+  // Ensure every WebDAV response advertises DAV support
+  c.header("DAV", "1, 2");
+  c.header("MS-Author-Via", "DAV");
+  await next();
+});
 dav.use("*", webdavAuthMiddleware);
 dav.route("/", webdavRoutes);
-app.route("", dav);
+app.route("/dav", dav);
 
 // Hourly cleanup of abandoned uploads
 setInterval(cleanupStagingDir, 60 * 60 * 1000);
