@@ -8,6 +8,7 @@
     "build": "turbo build",
     "start": "pnpm build && (pnpm --filter api start & pnpm --filter web preview)",
     "lint": "turbo lint",
+    "test": "turbo test",
     "mininas": "node packages/api/dist/cli.js",
     "mn": "node packages/api/dist/cli.js"
   },
