@@ -13,7 +13,7 @@ import PreviewModal from "./PreviewModal";
 import ShareDialog from "./ShareDialog";
 import type { FileEntry } from "../lib/api";
 import { BASE_PATH, withBase } from "../lib/basePath";
-import { ChevronRight, Home, FolderPlus, RefreshCw, Loader2, LogOut, Upload, LayoutGrid, List, Settings, UploadCloud } from "lucide-react";
+import { ChevronRight, Home, FolderPlus, RefreshCw, Loader2, LogOut, Upload, LayoutGrid, List, Settings, UploadCloud, Shield } from "lucide-react";
 import { getFilesFromDataTransfer } from "../lib/drop";
 
 const queryClient = new QueryClient({
@@ -47,7 +47,7 @@ function buildUrl(vol: string, pathStr: string): string {
 }
 
 function FileBrowserInner() {
-  const { isAuthenticated, isLoading: authLoading, logout } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user, logout } = useAuth();
 
   // Single source of truth: the URL pathname.
   // volume and currentPath are derived from it — no stale closure issues.
@@ -197,6 +197,15 @@ function FileBrowserInner() {
           selectedVolume={volume}
           onSelect={handleVolumeSelect}
         />
+        {user?.role === "admin" && (
+          <a
+            href={withBase("/admin")}
+            className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+            title="Admin"
+          >
+            <Shield size={18} />
+          </a>
+        )}
         <a
           href={withBase("/settings")}
           className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"

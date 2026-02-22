@@ -79,6 +79,35 @@ export interface WebDAVToken {
   last_used_at: string | null;
 }
 
+export interface AdminVolume {
+  id: string;
+  label: string;
+  path: string;
+  visibility: "public" | "private";
+}
+
+export interface AdminUser {
+  id: string;
+  username: string;
+  role: string;
+  created_at: string;
+}
+
+export interface AdminInvite {
+  id: string;
+  username: string;
+  created_by: string;
+  created_at: string;
+  expires_at: string;
+  used_at: string | null;
+  used_by: string | null;
+}
+
+export interface VolumeAccessUser {
+  id: string;
+  username: string;
+}
+
 export const api = {
   listFiles(volume: string, path: string = ""): Promise<DirectoryListing> {
     return request(volumeUrl("files", volume, path));
@@ -143,5 +172,77 @@ export const api = {
 
   triggerUpdate(): Promise<{ ok: boolean; message: string }> {
     return request("/admin/update", { method: "POST" });
+  },
+
+  // --- Admin: Volumes ---
+
+  adminListVolumes(): Promise<{ volumes: AdminVolume[] }> {
+    return request("/admin/volumes");
+  },
+
+  adminAddVolume(id: string, label: string, path: string): Promise<{ ok: boolean; id: string }> {
+    return request("/admin/volumes", {
+      method: "POST",
+      body: JSON.stringify({ id, label, path }),
+    });
+  },
+
+  adminRemoveVolume(id: string): Promise<{ ok: boolean }> {
+    return request(`/admin/volumes/${encodeURIComponent(id)}`, { method: "DELETE" });
+  },
+
+  adminSetVolumeVisibility(id: string, visibility: "public" | "private"): Promise<{ ok: boolean }> {
+    return request(`/admin/volumes/${encodeURIComponent(id)}/visibility`, {
+      method: "PATCH",
+      body: JSON.stringify({ visibility }),
+    });
+  },
+
+  adminGetVolumeAccess(volumeId: string): Promise<{ users: VolumeAccessUser[] }> {
+    return request(`/admin/volumes/${encodeURIComponent(volumeId)}/access`);
+  },
+
+  adminGrantVolumeAccess(volumeId: string, userId: string): Promise<{ ok: boolean }> {
+    return request(`/admin/volumes/${encodeURIComponent(volumeId)}/access`, {
+      method: "POST",
+      body: JSON.stringify({ userId }),
+    });
+  },
+
+  adminRevokeVolumeAccess(volumeId: string, userId: string): Promise<{ ok: boolean }> {
+    return request(`/admin/volumes/${encodeURIComponent(volumeId)}/access/${encodeURIComponent(userId)}`, {
+      method: "DELETE",
+    });
+  },
+
+  // --- Admin: Users ---
+
+  adminListUsers(): Promise<{ users: AdminUser[] }> {
+    return request("/admin/users");
+  },
+
+  adminDeleteUser(id: string): Promise<{ ok: boolean }> {
+    return request(`/admin/users/${encodeURIComponent(id)}`, { method: "DELETE" });
+  },
+
+  adminResetPasskeys(userId: string): Promise<{ ok: boolean; username: string; removedCredentials: number }> {
+    return request(`/admin/users/${encodeURIComponent(userId)}/reset-passkeys`, { method: "POST" });
+  },
+
+  // --- Admin: Invites ---
+
+  adminListInvites(): Promise<{ invites: AdminInvite[] }> {
+    return request("/admin/invites");
+  },
+
+  adminCreateInvite(username: string, expiresInHours?: number): Promise<{ invite: AdminInvite }> {
+    return request("/admin/invites", {
+      method: "POST",
+      body: JSON.stringify({ username, expiresInHours }),
+    });
+  },
+
+  adminDeleteInvite(id: string): Promise<{ ok: boolean }> {
+    return request(`/admin/invites/${encodeURIComponent(id)}`, { method: "DELETE" });
   },
 };
