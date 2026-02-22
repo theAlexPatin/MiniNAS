@@ -38,6 +38,7 @@ app.get("/api/health", (c) => c.json({ status: "ok" }));
 const authApi = new Hono();
 authApi.use("*", authRateLimit);
 authApi.use("/session", optionalAuthMiddleware);
+authApi.use("/logout", optionalAuthMiddleware);
 authApi.route("/", authRoutes);
 app.route("/api/v1/auth", authApi);
 

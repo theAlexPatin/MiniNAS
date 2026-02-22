@@ -6,25 +6,19 @@ import {
   removeVolume,
 } from "../services/volumes.js";
 import {
-  listUsers,
-  deleteUser,
   getUserById,
   resetPasskeys,
-  setVolumeVisibility,
-  getVolumeAccessList,
-  grantVolumeAccess,
-  revokeVolumeAccess,
 } from "../services/access.js";
-import {
-  createInvite,
-  listInvites,
-  deleteInvite,
-} from "../services/invites.js";
+import { createInvite } from "../services/invites.js";
+import { createManagementRoutes } from "./management.js";
 import { getDb } from "../db/index.js";
 
 const cli = new Hono();
 
-// --- Volumes ---
+// Shared management routes (users, invites list/delete, volume visibility/access)
+cli.route("/", createManagementRoutes());
+
+// --- Volumes (CLI-specific: full CRUD) ---
 
 cli.get("/volumes", (c) => {
   const db = getDb();
@@ -74,76 +68,7 @@ cli.delete("/volumes/:id", (c) => {
   return c.json({ ok: true, volume });
 });
 
-// --- Volume visibility ---
-
-cli.patch("/volumes/:id/visibility", async (c) => {
-  const volumeId = c.req.param("id");
-  const volume = getVolumeById(volumeId);
-  if (!volume) {
-    throw new HTTPException(404, { message: "Volume not found" });
-  }
-
-  const body = await c.req.json();
-  const { visibility } = body;
-  if (visibility !== "public" && visibility !== "private") {
-    throw new HTTPException(400, {
-      message: "visibility must be 'public' or 'private'",
-    });
-  }
-
-  setVolumeVisibility(volumeId, visibility);
-  return c.json({ ok: true });
-});
-
-// --- Volume access ---
-
-cli.get("/volumes/:id/access", (c) => {
-  const volumeId = c.req.param("id");
-  const volume = getVolumeById(volumeId);
-  if (!volume) {
-    throw new HTTPException(404, { message: "Volume not found" });
-  }
-
-  const users = getVolumeAccessList(volumeId);
-  return c.json({ users });
-});
-
-cli.post("/volumes/:id/access", async (c) => {
-  const volumeId = c.req.param("id");
-  const volume = getVolumeById(volumeId);
-  if (!volume) {
-    throw new HTTPException(404, { message: "Volume not found" });
-  }
-
-  const body = await c.req.json();
-  const { userId } = body;
-  if (!userId || typeof userId !== "string") {
-    throw new HTTPException(400, { message: "userId is required" });
-  }
-
-  const user = getUserById(userId);
-  if (!user) {
-    throw new HTTPException(404, { message: "User not found" });
-  }
-
-  grantVolumeAccess(volumeId, userId);
-  return c.json({ ok: true }, 201);
-});
-
-cli.delete("/volumes/:id/access/:userId", (c) => {
-  const volumeId = c.req.param("id");
-  const userId = c.req.param("userId");
-
-  revokeVolumeAccess(volumeId, userId);
-  return c.json({ ok: true });
-});
-
-// --- Users ---
-
-cli.get("/users", (c) => {
-  const users = listUsers();
-  return c.json({ users });
-});
+// --- Users (CLI-specific: reset passkeys) ---
 
 cli.post("/users/:id/reset-passkeys", (c) => {
   const userId = c.req.param("id");
@@ -155,18 +80,7 @@ cli.post("/users/:id/reset-passkeys", (c) => {
   return c.json({ ok: true, username: user.username, removedCredentials: count });
 });
 
-cli.delete("/users/:id", (c) => {
-  const userId = c.req.param("id");
-  const deleted = deleteUser(userId);
-  if (!deleted) {
-    throw new HTTPException(400, {
-      message: "User not found or cannot delete admin",
-    });
-  }
-  return c.json({ ok: true });
-});
-
-// --- Invites ---
+// --- Invites (CLI-specific: auto-selects admin as creator) ---
 
 cli.post("/invites", async (c) => {
   const body = await c.req.json();
@@ -189,20 +103,6 @@ cli.post("/invites", async (c) => {
 
   const invite = createInvite(admin.id, username, expiresInHours);
   return c.json({ invite }, 201);
-});
-
-cli.get("/invites", (c) => {
-  const invites = listInvites();
-  return c.json({ invites });
-});
-
-cli.delete("/invites/:id", (c) => {
-  const id = c.req.param("id");
-  const deleted = deleteInvite(id);
-  if (!deleted) {
-    throw new HTTPException(404, { message: "Invite not found" });
-  }
-  return c.json({ ok: true });
 });
 
 export default cli;

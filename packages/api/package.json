@@ -9,7 +9,8 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsup src/index.ts src/cli.ts --format esm --dts && cp src/db/schema.sql dist/schema.sql",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test": "vitest run"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.0",
@@ -21,7 +22,6 @@
     "better-sqlite3": "^11.8.0",
     "chokidar": "^4.0.0",
     "commander": "^13.0.0",
-    "dotenv": "^16.4.0",
     "fast-xml-parser": "^5.3.7",
     "fluent-ffmpeg": "^2.1.0",
     "hono": "^4.7.0",
@@ -39,6 +39,7 @@
     "@types/node": "^22.0.0",
     "tsup": "^8.3.0",
     "tsx": "^4.19.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^4.0.18"
   }
 }
