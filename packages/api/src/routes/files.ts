@@ -12,6 +12,7 @@ import {
 } from "../services/filesystem.js";
 import { MoveRequestSchema, MkdirRequestSchema } from "../types/api.js";
 import { audit } from "../services/audit-log.js";
+import { getIdentity } from "../security/index.js";
 
 const files = new Hono();
 
@@ -33,19 +34,19 @@ function getRelativePath(c: Context): string {
 // --- List directory or get file metadata ---
 
 files.get("/:volumeId", async (c) => {
-  const session = c.get("session" as never) as { sub: string };
+  const { userId } = getIdentity(c);
   const volumeId = c.req.param("volumeId");
-  const volume = getVolume(volumeId, session.sub);
+  const volume = getVolume(volumeId, userId);
 
   const entries = await listDirectory(volume, ".");
   return c.json({ entries, path: "", volume: volumeId });
 });
 
 files.get("/:volumeId/*", async (c) => {
-  const session = c.get("session" as never) as { sub: string };
+  const { userId } = getIdentity(c);
   const volumeId = c.req.param("volumeId");
   const relativePath = getRelativePath(c);
-  const volume = getVolume(volumeId, session.sub);
+  const volume = getVolume(volumeId, userId);
 
   const info = await getFileInfo(volume, relativePath || ".");
   if (info.isDirectory) {
@@ -62,17 +63,17 @@ files.delete("/:volumeId", async (c) => {
 });
 
 files.delete("/:volumeId/*", async (c) => {
-  const session = c.get("session" as never) as { sub: string };
+  const { userId } = getIdentity(c);
   const volumeId = c.req.param("volumeId");
   const relativePath = getRelativePath(c);
-  const volume = getVolume(volumeId, session.sub);
+  const volume = getVolume(volumeId, userId);
 
   if (!relativePath) {
     return c.json({ error: "Cannot delete volume root" }, 403);
   }
 
   await deleteEntry(volume, relativePath);
-  audit({ action: "file.delete", userId: session.sub, source: "api", volumeId, path: relativePath });
+  audit({ action: "file.delete", userId, source: "api", volumeId, path: relativePath });
   return c.json({ ok: true });
 });
 
@@ -86,10 +87,10 @@ files.patch(
   "/:volumeId/*",
   zValidator("json", MoveRequestSchema),
   async (c) => {
-    const session = c.get("session" as never) as { sub: string };
+    const { userId } = getIdentity(c);
     const volumeId = c.req.param("volumeId");
     const relativePath = getRelativePath(c);
-    const volume = getVolume(volumeId, session.sub);
+    const volume = getVolume(volumeId, userId);
     const { destination } = c.req.valid("json");
 
     if (!relativePath) {
@@ -97,7 +98,7 @@ files.patch(
     }
 
     await moveEntry(volume, relativePath, destination);
-    audit({ action: "file.move", userId: session.sub, source: "api", volumeId, path: relativePath, dest: destination });
+    audit({ action: "file.move", userId, source: "api", volumeId, path: relativePath, dest: destination });
     return c.json({ ok: true });
   }
 );
@@ -108,13 +109,13 @@ files.post(
   "/:volumeId",
   zValidator("json", MkdirRequestSchema),
   async (c) => {
-    const session = c.get("session" as never) as { sub: string };
+    const { userId } = getIdentity(c);
     const volumeId = c.req.param("volumeId");
-    const volume = getVolume(volumeId, session.sub);
+    const volume = getVolume(volumeId, userId);
     const { name } = c.req.valid("json");
 
     await createDirectory(volume, ".", name);
-    audit({ action: "dir.create", userId: session.sub, source: "api", volumeId, path: name });
+    audit({ action: "dir.create", userId, source: "api", volumeId, path: name });
     return c.json({ ok: true }, 201);
   }
 );
@@ -123,14 +124,14 @@ files.post(
   "/:volumeId/*",
   zValidator("json", MkdirRequestSchema),
   async (c) => {
-    const session = c.get("session" as never) as { sub: string };
+    const { userId } = getIdentity(c);
     const volumeId = c.req.param("volumeId");
     const relativePath = getRelativePath(c);
-    const volume = getVolume(volumeId, session.sub);
+    const volume = getVolume(volumeId, userId);
     const { name } = c.req.valid("json");
 
     await createDirectory(volume, relativePath || ".", name);
-    audit({ action: "dir.create", userId: session.sub, source: "api", volumeId, path: path.join(relativePath || ".", name) });
+    audit({ action: "dir.create", userId, source: "api", volumeId, path: path.join(relativePath || ".", name) });
     return c.json({ ok: true }, 201);
   }
 );

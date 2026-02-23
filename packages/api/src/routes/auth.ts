@@ -14,6 +14,7 @@ import { getDb } from "../db/index.js";
 import { config } from "../config.js";
 import { createSession, revokeSession } from "../services/sessions.js";
 import { validateInvite, markInviteUsed } from "../services/invites.js";
+import { getOptionalIdentity } from "../security/index.js";
 
 const auth = new Hono();
 
@@ -435,17 +436,15 @@ auth.post("/authentication/verify", async (c) => {
 
 // Session check
 auth.get("/session", async (c) => {
-  const session = c.get("session" as never) as
-    | { sub: string; jti: string }
-    | undefined;
-  if (!session) {
+  const identity = getOptionalIdentity(c);
+  if (!identity) {
     return c.json({ authenticated: false });
   }
 
   const db = getDb();
   const user = db
     .prepare("SELECT id, username, role FROM users WHERE id = ?")
-    .get(session.sub) as
+    .get(identity.userId) as
     | { id: string; username: string; role: string }
     | undefined;
 
@@ -457,11 +456,9 @@ auth.get("/session", async (c) => {
 
 // Logout
 auth.post("/logout", async (c) => {
-  const session = c.get("session" as never) as
-    | { sub: string; jti: string }
-    | undefined;
-  if (session) {
-    revokeSession(session.jti);
+  const identity = getOptionalIdentity(c);
+  if (identity?.sessionId) {
+    revokeSession(identity.sessionId);
   }
   deleteCookie(c, "session", { path: "/" });
   return c.json({ ok: true });

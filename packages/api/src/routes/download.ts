@@ -8,6 +8,7 @@ import archiver from "archiver";
 import mime from "mime-types";
 import { getVolume, resolveVolumePath } from "../services/filesystem.js";
 import { ZipDownloadSchema } from "../types/api.js";
+import { getIdentity } from "../security/index.js";
 
 const download = new Hono();
 
@@ -32,10 +33,10 @@ download.get("/:volumeId", async (c) => {
 });
 
 download.get("/:volumeId/*", async (c) => {
-  const session = c.get("session" as never) as { sub: string };
+  const { userId } = getIdentity(c);
   const volumeId = c.req.param("volumeId");
   const relativePath = getRelativePath(c);
-  const volume = getVolume(volumeId, session.sub);
+  const volume = getVolume(volumeId, userId);
   const filePath = resolveVolumePath(volume, relativePath);
 
   const stat = fs.statSync(filePath);
@@ -98,9 +99,9 @@ download.post(
   "/zip",
   zValidator("json", ZipDownloadSchema),
   async (c) => {
-    const session = c.get("session" as never) as { sub: string };
+    const { userId } = getIdentity(c);
     const { volume: volumeId, paths } = c.req.valid("json");
-    const volume = getVolume(volumeId, session.sub);
+    const volume = getVolume(volumeId, userId);
 
     c.header("Content-Type", "application/zip");
     c.header(

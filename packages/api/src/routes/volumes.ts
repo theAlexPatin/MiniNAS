@@ -2,12 +2,13 @@ import { Hono } from "hono";
 import { getVolumeStats } from "../services/filesystem.js";
 import { getVolumes } from "../services/volumes.js";
 import { getAccessibleVolumeIds } from "../services/access.js";
+import { getIdentity } from "../security/index.js";
 
 const volumes = new Hono();
 
 volumes.get("/", async (c) => {
-  const session = c.get("session" as never) as { sub: string };
-  const accessibleIds = new Set(getAccessibleVolumeIds(session.sub));
+  const { userId } = getIdentity(c);
+  const accessibleIds = new Set(getAccessibleVolumeIds(userId));
 
   const results = await Promise.allSettled(
     getVolumes()

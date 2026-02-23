@@ -8,7 +8,7 @@ import mime from "mime-types";
 import { CreateShareSchema } from "../types/api.js";
 import { config } from "../config.js";
 import { getVolume, resolveVolumePath } from "../services/filesystem.js";
-import { authMiddleware } from "../middleware/auth.js";
+import { resolveIdentity, getIdentity } from "../security/index.js";
 import {
   createShareLink,
   getShareLink,
@@ -92,17 +92,17 @@ share.get("/:id/info", async (c) => {
 // Create share link
 share.post(
   "/",
-  authMiddleware,
+  resolveIdentity("required"),
   zValidator("json", CreateShareSchema),
   async (c) => {
-    const session = c.get("session" as never) as { sub: string };
+    const { userId } = getIdentity(c);
     const body = c.req.valid("json");
 
-    const volume = getVolume(body.volume, session.sub);
+    const volume = getVolume(body.volume, userId);
     resolveVolumePath(volume, body.path);
 
     const link = createShareLink({
-      userId: session.sub,
+      userId,
       volume: body.volume,
       path: body.path,
       password: body.password,
@@ -117,9 +117,9 @@ share.post(
 );
 
 // List user's shares
-share.get("/", authMiddleware, async (c) => {
-  const session = c.get("session" as never) as { sub: string };
-  const shares = listUserShares(session.sub);
+share.get("/", resolveIdentity("required"), async (c) => {
+  const { userId } = getIdentity(c);
+  const shares = listUserShares(userId);
   const sharesWithUrls = shares.map((s) => ({
     ...s,
     url: getShareUrl(c, s.id, !!s.is_public),
@@ -128,10 +128,10 @@ share.get("/", authMiddleware, async (c) => {
 });
 
 // Delete share
-share.delete("/:id", authMiddleware, async (c) => {
-  const session = c.get("session" as never) as { sub: string };
+share.delete("/:id", resolveIdentity("required"), async (c) => {
+  const { userId } = getIdentity(c);
   const id = c.req.param("id");
-  const deleted = deleteShareLink(id, session.sub);
+  const deleted = deleteShareLink(id, userId);
   if (!deleted) {
     return c.json({ error: "Share not found" }, 404);
   }

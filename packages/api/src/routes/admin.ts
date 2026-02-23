@@ -8,6 +8,7 @@ import { getVolumeById, addVolume, removeVolume } from "../services/volumes.js";
 import { scanVolume, watchVolume, unwatchVolume } from "../services/indexer.js";
 import { getUserById, resetPasskeys } from "../services/access.js";
 import { getDb } from "../db/index.js";
+import { getIdentity } from "../security/index.js";
 
 const admin = new Hono();
 
@@ -83,7 +84,7 @@ admin.post("/users/:id/reset-passkeys", (c) => {
 // --- Invites (admin-specific: uses session.sub as creator) ---
 
 admin.post("/invites", async (c) => {
-  const session = c.get("session" as never) as { sub: string };
+  const { userId } = getIdentity(c);
   const body = await c.req.json();
   const { username, expiresInHours } = body;
 
@@ -91,7 +92,7 @@ admin.post("/invites", async (c) => {
     throw new HTTPException(400, { message: "username is required" });
   }
 
-  const invite = createInvite(session.sub, username, expiresInHours);
+  const invite = createInvite(userId, username, expiresInHours);
   return c.json({ invite }, 201);
 });
 
