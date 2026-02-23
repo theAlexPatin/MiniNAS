@@ -1,19 +1,23 @@
 {
-  "name": "mininas",
-  "version": "0.1.0",
-  "private": true,
-  "packageManager": "pnpm@10.27.0",
-  "scripts": {
-    "dev": "turbo dev",
-    "build": "turbo build",
-    "start": "pnpm build && (pnpm --filter api start & pnpm --filter web preview)",
-    "lint": "turbo lint",
-    "test": "turbo test",
-    "mininas": "node packages/api/dist/cli.js",
-    "mn": "node packages/api/dist/cli.js"
-  },
-  "devDependencies": {
-    "turbo": "^2.4.0",
-    "typescript": "^5.7.0"
-  }
+	"name": "mininas",
+	"version": "0.1.0",
+	"private": true,
+	"packageManager": "pnpm@10.27.0",
+	"scripts": {
+		"dev": "turbo dev",
+		"build": "turbo build",
+		"start": "pnpm build && (pnpm --filter api start & pnpm --filter web preview)",
+		"lint": "biome check .",
+		"lint:fix": "biome check --fix .",
+		"format": "biome format .",
+		"format:fix": "biome format --fix .",
+		"test": "turbo test",
+		"mininas": "node packages/api/dist/cli.js",
+		"mn": "node packages/api/dist/cli.js"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.4.4",
+		"turbo": "^2.4.0",
+		"typescript": "^5.7.0"
+	}
 }

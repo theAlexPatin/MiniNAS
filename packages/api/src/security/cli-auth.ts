@@ -1,6 +1,6 @@
-import { createMiddleware } from "hono/factory";
-import { HTTPException } from "hono/http-exception";
-import { config } from "../config.js";
+import { createMiddleware } from 'hono/factory'
+import { HTTPException } from 'hono/http-exception'
+import { config } from '../config.js'
 
 /**
  * CLI authentication via X-CLI-Token header.
@@ -8,16 +8,16 @@ import { config } from "../config.js";
  * without a user context.
  */
 export const cliAuthMiddleware = createMiddleware(async (c, next) => {
-  if (!config.cliSecret) {
-    throw new HTTPException(403, {
-      message: "CLI access not configured (set CLI_SECRET)",
-    });
-  }
+	if (!config.cliSecret) {
+		throw new HTTPException(403, {
+			message: 'CLI access not configured (set CLI_SECRET)',
+		})
+	}
 
-  const token = c.req.header("X-CLI-Token");
-  if (!token || token !== config.cliSecret) {
-    throw new HTTPException(403, { message: "Invalid CLI token" });
-  }
+	const token = c.req.header('X-CLI-Token')
+	if (!token || token !== config.cliSecret) {
+		throw new HTTPException(403, { message: 'Invalid CLI token' })
+	}
 
-  await next();
-});
+	await next()
+})
