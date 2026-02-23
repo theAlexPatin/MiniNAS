@@ -2,9 +2,13 @@ import { Hono } from "hono";
 import { logger } from "hono/logger";
 import { HTTPException } from "hono/http-exception";
 import { corsMiddleware } from "./middleware/cors.js";
-import { authMiddleware, optionalAuthMiddleware } from "./middleware/auth.js";
-import { adminMiddleware } from "./middleware/admin.js";
 import { authRateLimit } from "./middleware/rate-limit.js";
+import {
+  resolveIdentity,
+  requireRole,
+  cliAuthMiddleware,
+  webdavAuthMiddleware,
+} from "./security/index.js";
 import authRoutes from "./routes/auth.js";
 import filesRoutes from "./routes/files.js";
 import downloadRoutes from "./routes/download.js";
@@ -16,8 +20,6 @@ import previewRoutes from "./routes/preview.js";
 import shareRoutes from "./routes/share.js";
 import adminRoutes from "./routes/admin.js";
 import cliRoutes from "./routes/cli.js";
-import { cliAuthMiddleware } from "./middleware/cli-auth.js";
-import { webdavAuthMiddleware } from "./middleware/webdav-auth.js";
 import webdavRoutes from "./routes/webdav.js";
 import webdavTokenRoutes from "./routes/webdav-tokens.js";
 
@@ -37,8 +39,8 @@ app.get("/api/health", (c) => c.json({ status: "ok" }));
 // Auth routes — rate-limited, some require no auth
 const authApi = new Hono();
 authApi.use("*", authRateLimit);
-authApi.use("/session", optionalAuthMiddleware);
-authApi.use("/logout", optionalAuthMiddleware);
+authApi.use("/session", resolveIdentity("optional"));
+authApi.use("/logout", resolveIdentity("optional"));
 authApi.route("/", authRoutes);
 app.route("/api/v1/auth", authApi);
 
@@ -47,12 +49,9 @@ app.route("/api/v1/auth", authApi);
 app.route("/api/v1/share", shareRoutes);
 
 // Protected API routes
-// Mount each sub-router directly on app with its own auth wrapper.
-// Hono's /* wildcard doesn't work through double-nested .route() calls,
-// so we use the same pattern as WebDAV: wrapper.use("*", auth) + wrapper.route("/", routes).
 function withAuth(routes: Hono): Hono {
   const h = new Hono();
-  h.use("*", authMiddleware);
+  h.use("*", resolveIdentity("required"));
   h.route("/", routes);
   return h;
 }
@@ -65,10 +64,10 @@ app.route("/api/v1/search", withAuth(searchRoutes));
 app.route("/api/v1/preview", withAuth(previewRoutes));
 app.route("/api/v1/webdav-tokens", withAuth(webdavTokenRoutes));
 
-// Admin routes (auth + admin required)
+// Admin routes (auth + admin role required)
 const adminApi = new Hono();
-adminApi.use("*", authMiddleware);
-adminApi.use("*", adminMiddleware);
+adminApi.use("*", resolveIdentity("required"));
+adminApi.use("*", requireRole("admin"));
 adminApi.route("/", adminRoutes);
 app.route("/api/v1/admin", adminApi);
 

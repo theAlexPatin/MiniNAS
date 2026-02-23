@@ -7,6 +7,7 @@ import {
   getThumbnailPath,
   type ThumbnailSize,
 } from "../services/thumbnails.js";
+import { getIdentity } from "../security/index.js";
 
 const preview = new Hono();
 
@@ -32,12 +33,12 @@ preview.get("/:volumeId", async (c) => {
 });
 
 preview.get("/:volumeId/*", async (c) => {
-  const session = c.get("session" as never) as { sub: string };
+  const { userId } = getIdentity(c);
   const volumeId = c.req.param("volumeId");
   const relativePath = getRelativePath(c);
   const size = (c.req.query("size") || "small") as ThumbnailSize;
 
-  const volume = getVolume(volumeId, session.sub);
+  const volume = getVolume(volumeId, userId);
   const filePath = resolveVolumePath(volume, relativePath);
   const mimeType = mime.lookup(filePath) || null;
 

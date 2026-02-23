@@ -19,6 +19,7 @@ import {
 import { getVolumes } from "../services/volumes.js";
 import { getAccessibleVolumeIds } from "../services/access.js";
 import { audit } from "../services/audit-log.js";
+import { getIdentity } from "../security/index.js";
 import {
   multistatus,
   lockResponse,
@@ -64,10 +65,6 @@ setInterval(() => {
 }, 10 * 60 * 1000);
 
 // --- Helpers ---
-
-function getSession(c: Context): { sub: string } {
-  return c.get("session" as never) as { sub: string };
-}
 
 /**
  * Extract the WebDAV-relative path from the full request path.
@@ -152,7 +149,7 @@ webdav.on("OPTIONS", ["/*", "/"], (c) => {
 // --- PROPFIND ---
 
 webdav.on("PROPFIND", ["/*", "/"], async (c) => {
-  const session = getSession(c);
+  const { userId } = getIdentity(c);
   const subpath = getDavSubpath(c);
   const { volumeId, relativePath } = parseDavPath(subpath);
   const depth = c.req.header("Depth") || "1";
@@ -163,7 +160,7 @@ webdav.on("PROPFIND", ["/*", "/"], async (c) => {
   const resources: DavResource[] = [];
 
   if (!volumeId) {
-    const volumeIds = getAccessibleVolumeIds(session.sub);
+    const volumeIds = getAccessibleVolumeIds(userId);
     const allVolumes = getVolumes();
     const accessible = allVolumes.filter((v) => volumeIds.includes(v.id));
 
@@ -191,7 +188,7 @@ webdav.on("PROPFIND", ["/*", "/"], async (c) => {
       }
     }
   } else {
-    const volume = getVolume(volumeId, session.sub);
+    const volume = getVolume(volumeId, userId);
     const resolved = resolveVolumePath(volume, relativePath || ".");
 
     const stat = await fsPromises.stat(resolved);
@@ -254,7 +251,7 @@ webdav.on("PROPFIND", ["/*", "/"], async (c) => {
 // --- GET ---
 
 webdav.get("/*", async (c) => {
-  const session = getSession(c);
+  const { userId } = getIdentity(c);
   const subpath = getDavSubpath(c);
   const { volumeId, relativePath } = parseDavPath(subpath);
 
@@ -262,7 +259,7 @@ webdav.get("/*", async (c) => {
     return c.body("Method not allowed on root collection", 405);
   }
 
-  const volume = getVolume(volumeId, session.sub);
+  const volume = getVolume(volumeId, userId);
   const filePath = resolveVolumePath(volume, relativePath || ".");
   const stat = fs.statSync(filePath);
 
@@ -321,7 +318,7 @@ webdav.get("/*", async (c) => {
 // --- HEAD ---
 
 webdav.on("HEAD", "/*", async (c) => {
-  const session = getSession(c);
+  const { userId } = getIdentity(c);
   const subpath = getDavSubpath(c);
   const { volumeId, relativePath } = parseDavPath(subpath);
 
@@ -330,7 +327,7 @@ webdav.on("HEAD", "/*", async (c) => {
     return c.body(null, 200);
   }
 
-  const volume = getVolume(volumeId, session.sub);
+  const volume = getVolume(volumeId, userId);
   const filePath = resolveVolumePath(volume, relativePath || ".");
   const stat = fs.statSync(filePath);
 
@@ -354,7 +351,7 @@ webdav.on("HEAD", "/*", async (c) => {
 // --- PUT ---
 
 webdav.put("/*", async (c) => {
-  const session = getSession(c);
+  const { userId } = getIdentity(c);
   const subpath = getDavSubpath(c);
   const { volumeId, relativePath } = parseDavPath(subpath);
 
@@ -362,7 +359,7 @@ webdav.put("/*", async (c) => {
     return c.body("Cannot PUT to root or volume root", 405);
   }
 
-  const volume = getVolume(volumeId, session.sub);
+  const volume = getVolume(volumeId, userId);
   const filePath = resolveVolumePath(volume, relativePath);
 
   // Ensure parent directory exists
@@ -400,14 +397,14 @@ webdav.put("/*", async (c) => {
     await fsPromises.writeFile(filePath, "");
   }
 
-  audit({ action: "file.create", userId: session.sub, source: "webdav", volumeId, path: relativePath });
+  audit({ action: "file.create", userId, source: "webdav", volumeId, path: relativePath });
   return c.body(null, existed ? 204 : 201);
 });
 
 // --- DELETE ---
 
 webdav.delete("/*", async (c) => {
-  const session = getSession(c);
+  const { userId } = getIdentity(c);
   const subpath = getDavSubpath(c);
   const { volumeId, relativePath } = parseDavPath(subpath);
 
@@ -415,16 +412,16 @@ webdav.delete("/*", async (c) => {
     return c.body("Cannot delete root", 403);
   }
 
-  const volume = getVolume(volumeId, session.sub);
+  const volume = getVolume(volumeId, userId);
   await deleteEntry(volume, relativePath || ".");
-  audit({ action: "file.delete", userId: session.sub, source: "webdav", volumeId, path: relativePath || "." });
+  audit({ action: "file.delete", userId, source: "webdav", volumeId, path: relativePath || "." });
   return c.body(null, 204);
 });
 
 // --- MKCOL ---
 
 webdav.on("MKCOL", "/*", async (c) => {
-  const session = getSession(c);
+  const { userId } = getIdentity(c);
   const subpath = getDavSubpath(c);
   const { volumeId, relativePath } = parseDavPath(subpath);
 
@@ -432,19 +429,19 @@ webdav.on("MKCOL", "/*", async (c) => {
     return c.body("Cannot create collection at root", 405);
   }
 
-  const volume = getVolume(volumeId, session.sub);
+  const volume = getVolume(volumeId, userId);
   const name = path.basename(relativePath);
   const parentPath = path.dirname(relativePath);
 
   await createDirectory(volume, parentPath === "." ? "" : parentPath, name);
-  audit({ action: "dir.create", userId: session.sub, source: "webdav", volumeId, path: relativePath });
+  audit({ action: "dir.create", userId, source: "webdav", volumeId, path: relativePath });
   return c.body(null, 201);
 });
 
 // --- MOVE ---
 
 webdav.on("MOVE", "/*", async (c) => {
-  const session = getSession(c);
+  const { userId } = getIdentity(c);
   const subpath = getDavSubpath(c);
   const { volumeId, relativePath } = parseDavPath(subpath);
   const destHeader = c.req.header("Destination");
@@ -462,16 +459,16 @@ webdav.on("MOVE", "/*", async (c) => {
     return c.body("Cross-volume moves are not supported", 502);
   }
 
-  const volume = getVolume(volumeId, session.sub);
+  const volume = getVolume(volumeId, userId);
   await moveEntry(volume, relativePath || ".", dest.relativePath);
-  audit({ action: "file.move", userId: session.sub, source: "webdav", volumeId, path: relativePath || ".", dest: dest.relativePath });
+  audit({ action: "file.move", userId, source: "webdav", volumeId, path: relativePath || ".", dest: dest.relativePath });
   return c.body(null, 204);
 });
 
 // --- COPY ---
 
 webdav.on("COPY", "/*", async (c) => {
-  const session = getSession(c);
+  const { userId } = getIdentity(c);
   const subpath = getDavSubpath(c);
   const { volumeId, relativePath } = parseDavPath(subpath);
   const destHeader = c.req.header("Destination");
@@ -489,9 +486,9 @@ webdav.on("COPY", "/*", async (c) => {
     return c.body("Cross-volume copies are not supported", 502);
   }
 
-  const volume = getVolume(volumeId, session.sub);
+  const volume = getVolume(volumeId, userId);
   await copyEntry(volume, relativePath || ".", dest.relativePath);
-  audit({ action: "file.copy", userId: session.sub, source: "webdav", volumeId, path: relativePath || ".", dest: dest.relativePath });
+  audit({ action: "file.copy", userId, source: "webdav", volumeId, path: relativePath || ".", dest: dest.relativePath });
   return c.body(null, 201);
 });
 

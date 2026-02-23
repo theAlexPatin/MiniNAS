@@ -8,6 +8,7 @@ import { isAllowedOrigin } from "../lib/url.js";
 import { getVolume, resolveVolumePath } from "../services/filesystem.js";
 import { canAccessVolume } from "../services/access.js";
 import { audit } from "../services/audit-log.js";
+import { getIdentity, getOptionalIdentity } from "../security/index.js";
 
 // Ensure staging directory exists
 fs.mkdirSync(config.uploadStagingDir, { recursive: true });
@@ -68,7 +69,7 @@ const upload = new Hono();
 
 // Validate volume access on upload creation (POST)
 upload.post("/*", async (c, next) => {
-  const session = c.get("session" as never) as { sub: string };
+  const { userId } = getIdentity(c);
   const uploadMetadata = c.req.header("upload-metadata");
   if (uploadMetadata) {
     // TUS metadata is comma-separated key-value pairs, values are base64-encoded
@@ -77,7 +78,7 @@ upload.post("/*", async (c, next) => {
       const [key, value] = part.split(" ");
       if (key === "volume" && value) {
         const volumeId = Buffer.from(value, "base64").toString("utf-8");
-        getVolume(volumeId, session.sub); // throws 403 if denied
+        getVolume(volumeId, userId); // throws 403 if denied
       }
     }
   }
@@ -96,9 +97,9 @@ upload.all("/*", async (c) => {
   }
 
   // Stash userId on raw request so TUS onUploadFinish can access it
-  const session = c.get("session" as never) as { sub: string } | undefined;
-  if (session?.sub) {
-    (req as any).__userId = session.sub;
+  const identity = getOptionalIdentity(c);
+  if (identity) {
+    (req as any).__userId = identity.userId;
   }
 
   const origin = c.req.header("origin");

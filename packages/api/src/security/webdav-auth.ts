@@ -1,6 +1,8 @@
 import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
 import { verifyToken } from "../services/webdav-tokens.js";
+import { getUserById } from "../services/access.js";
+import { setIdentity } from "./types.js";
 
 export const webdavAuthMiddleware = createMiddleware(async (c, next) => {
   // Allow unauthenticated OPTIONS so clients can discover DAV capabilities
@@ -31,6 +33,13 @@ export const webdavAuthMiddleware = createMiddleware(async (c, next) => {
     throw new HTTPException(401, { message: "Invalid credentials" });
   }
 
-  c.set("session" as never, { sub: result.userId } as never);
+  const user = getUserById(result.userId);
+  setIdentity(c, {
+    userId: result.userId,
+    kind: "webdav",
+    sessionId: null,
+    role: (user?.role as "admin" | "user") ?? "user",
+  });
+
   await next();
 });
