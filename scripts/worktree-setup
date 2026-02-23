@@ -26,6 +26,16 @@ get_main_worktree() {
 CURRENT_WORKTREE="$(git rev-parse --show-toplevel)"
 SOURCE_WORKTREE="${1:-$(get_main_worktree)}"
 
+# ── 0. Pull latest base branch in the source worktree ────────────────
+echo "==> Pulling latest changes in source worktree"
+git -C "$SOURCE_WORKTREE" fetch origin 2>/dev/null || true
+DEFAULT_BRANCH="$(git -C "$SOURCE_WORKTREE" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')"
+if [ -n "$DEFAULT_BRANCH" ]; then
+  git -C "$SOURCE_WORKTREE" pull origin "$DEFAULT_BRANCH" --ff-only 2>/dev/null || true
+  echo "    Pulled origin/$DEFAULT_BRANCH"
+fi
+echo ""
+
 if [ -z "$SOURCE_WORKTREE" ]; then
   echo "Error: Could not determine source worktree. Please specify it as an argument."
   exit 1
