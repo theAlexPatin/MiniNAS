@@ -1,30 +1,30 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { checkSession, logout as logoutFn } from "../lib/passkeys";
-import { withBase } from "../lib/basePath";
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { withBase } from '../lib/basePath'
+import { checkSession, logout as logoutFn } from '../lib/passkeys'
 
 export function useAuth() {
-  const queryClient = useQueryClient();
+	const queryClient = useQueryClient()
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["auth", "session"],
-    queryFn: checkSession,
-    staleTime: 60_000,
-    retry: false,
-  });
+	const { data, isLoading } = useQuery({
+		queryKey: ['auth', 'session'],
+		queryFn: checkSession,
+		staleTime: 60_000,
+		retry: false,
+	})
 
-  const handleLogout = async () => {
-    await logoutFn();
-    queryClient.setQueryData(["auth", "session"], {
-      authenticated: false,
-      user: null,
-    });
-    window.location.href = withBase("/login");
-  };
+	const handleLogout = async () => {
+		await logoutFn()
+		queryClient.setQueryData(['auth', 'session'], {
+			authenticated: false,
+			user: null,
+		})
+		window.location.href = withBase('/login')
+	}
 
-  return {
-    isAuthenticated: data?.authenticated ?? false,
-    user: data?.user ?? null,
-    isLoading,
-    logout: handleLogout,
-  };
+	return {
+		isAuthenticated: data?.authenticated ?? false,
+		user: data?.user ?? null,
+		isLoading,
+		logout: handleLogout,
+	}
 }
