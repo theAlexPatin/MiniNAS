@@ -168,6 +168,38 @@ describe('shared management routes via admin API', () => {
 			expect(res.status).toBe(201)
 		})
 
+		it('rejects granting access to public volume', async () => {
+			const token = await setup()
+			createTestVolume('v1', 'Test', '/tmp/test-vol', 'public')
+			createTestUser('u2', 'alice')
+
+			const res = await app.request('/api/v1/admin/volumes/v1/access', {
+				method: 'POST',
+				headers: {
+					...adminHeaders(token),
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ userId: 'u2' }),
+			})
+			expect(res.status).toBe(400)
+		})
+
+		it('rejects granting access to admin user', async () => {
+			const token = await setup()
+			createTestVolume('v1', 'Test', '/tmp/test-vol', 'private')
+			createTestUser('admin2', 'admin2', 'admin')
+
+			const res = await app.request('/api/v1/admin/volumes/v1/access', {
+				method: 'POST',
+				headers: {
+					...adminHeaders(token),
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ userId: 'admin2' }),
+			})
+			expect(res.status).toBe(400)
+		})
+
 		it('revokes volume access', async () => {
 			const token = await setup()
 			createTestVolume('v1', 'Test', '/tmp/test-vol', 'private')
