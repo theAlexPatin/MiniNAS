@@ -90,6 +90,9 @@ export function getVolumeAccessList(volumeId: string): UserInfo[] {
 export function setVolumeVisibility(volumeId: string, visibility: 'public' | 'private'): void {
 	const db = getDb()
 	db.prepare('UPDATE volumes SET visibility = ? WHERE id = ?').run(visibility, volumeId)
+	if (visibility === 'public') {
+		db.prepare('DELETE FROM volume_access WHERE volume_id = ?').run(volumeId)
+	}
 }
 
 export function listUsers(): UserInfo[] {

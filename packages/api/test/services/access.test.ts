@@ -148,6 +148,27 @@ describe('setVolumeVisibility', () => {
 		setVolumeVisibility('v1', 'private')
 		expect(canAccessVolume('u1', 'v1')).toBe(false)
 	})
+
+	it('clears access list when set to public', () => {
+		createTestUser('u1', 'alice')
+		createTestUser('u2', 'bob')
+		createTestVolume('v1', 'Test', '/tmp/t', 'private')
+		grantVolumeAccess('v1', 'u1')
+		grantVolumeAccess('v1', 'u2')
+		expect(getVolumeAccessList('v1')).toHaveLength(2)
+
+		setVolumeVisibility('v1', 'public')
+		expect(getVolumeAccessList('v1')).toHaveLength(0)
+	})
+
+	it('does not clear access list when set to private', () => {
+		createTestUser('u1', 'alice')
+		createTestVolume('v1', 'Test', '/tmp/t', 'private')
+		grantVolumeAccess('v1', 'u1')
+
+		setVolumeVisibility('v1', 'private')
+		expect(getVolumeAccessList('v1')).toHaveLength(1)
+	})
 })
 
 describe('listUsers', () => {

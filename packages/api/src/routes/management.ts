@@ -1,10 +1,12 @@
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
+import { getDb } from '../db/index.js'
 import {
 	deleteUser,
 	getUserById,
 	getVolumeAccessList,
 	grantVolumeAccess,
+	isAdmin,
 	listUsers,
 	revokeVolumeAccess,
 	setVolumeVisibility,
@@ -100,9 +102,24 @@ export function createManagementRoutes(): Hono {
 			throw new HTTPException(400, { message: 'userId is required' })
 		}
 
+		const volRow = getDb().prepare('SELECT visibility FROM volumes WHERE id = ?').get(volumeId) as
+			| { visibility: string }
+			| undefined
+		if (volRow?.visibility === 'public') {
+			throw new HTTPException(400, {
+				message: 'Cannot grant access to a public volume',
+			})
+		}
+
 		const user = getUserById(userId)
 		if (!user) {
 			throw new HTTPException(404, { message: 'User not found' })
+		}
+
+		if (isAdmin(userId)) {
+			throw new HTTPException(400, {
+				message: 'Admin users already have implicit access to all volumes',
+			})
 		}
 
 		grantVolumeAccess(volumeId, userId)

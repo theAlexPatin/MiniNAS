@@ -70,7 +70,7 @@ function VolumeAccessPanel({
 	allUsers,
 }: {
 	volumeId: string
-	allUsers: { id: string; username: string }[]
+	allUsers: { id: string; username: string; role?: string }[]
 }) {
 	const { data, isLoading } = useVolumeAccess(volumeId)
 	const grantMutation = useGrantVolumeAccess()
@@ -78,7 +78,8 @@ function VolumeAccessPanel({
 	const [selectedUserId, setSelectedUserId] = useState('')
 
 	const accessUserIds = new Set(data?.users?.map((u) => u.id) || [])
-	const availableUsers = allUsers.filter((u) => !accessUserIds.has(u.id))
+	const nonAdminUsers = allUsers.filter((u) => u.role !== 'admin')
+	const availableUsers = nonAdminUsers.filter((u) => !accessUserIds.has(u.id))
 
 	const handleGrant = () => {
 		if (!selectedUserId) return
@@ -227,9 +228,7 @@ function AddVolumeModal({
 								<Loader2 size={18} className="animate-spin text-gray-400" />
 							</div>
 						) : !data?.volumes?.length ? (
-							<p className="text-sm text-gray-400 py-4 text-center">
-								No available volumes found.
-							</p>
+							<p className="text-sm text-gray-400 py-4 text-center">No available volumes found.</p>
 						) : (
 							<div className="space-y-1 max-h-48 overflow-y-auto">
 								{data.volumes.map((vol) => (
@@ -245,9 +244,7 @@ function AddVolumeModal({
 									>
 										<HardDrive
 											size={16}
-											className={
-												selectedPath === vol.path ? 'text-brand-600' : 'text-gray-400'
-											}
+											className={selectedPath === vol.path ? 'text-brand-600' : 'text-gray-400'}
 										/>
 										<div className="min-w-0 flex-1">
 											<p
@@ -453,12 +450,20 @@ function VolumesSection() {
 									</button>
 								</div>
 							</div>
-							{expandedVolume === vol.id && (
+							{expandedVolume === vol.id && vol.visibility === 'public' && (
+								<div className="mt-3 pl-4 border-l-2 border-gray-100">
+									<p className="text-xs text-gray-400">
+										Public volumes are accessible to all users — no access list needed.
+									</p>
+								</div>
+							)}
+							{expandedVolume === vol.id && vol.visibility === 'private' && (
 								<VolumeAccessPanel
 									volumeId={vol.id}
 									allUsers={(usersData?.users || []).map((u) => ({
 										id: u.id,
 										username: u.username,
+										role: u.role,
 									}))}
 								/>
 							)}
