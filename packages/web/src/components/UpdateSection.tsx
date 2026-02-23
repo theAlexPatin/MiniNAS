@@ -1,15 +1,39 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Loader2, Package, RefreshCw } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api } from '../lib/api'
 
 export default function UpdateSection() {
 	const [restarting, setRestarting] = useState(false)
+	const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
 	const { data, isLoading } = useQuery({
 		queryKey: ['version'],
 		queryFn: () => api.getVersion(),
 	})
+
+	// Poll the version endpoint after triggering an update to detect when the server is back
+	useEffect(() => {
+		if (!restarting) return
+
+		// Wait a few seconds before polling to give the server time to go down
+		const startDelay = setTimeout(() => {
+			pollRef.current = setInterval(async () => {
+				try {
+					await api.getVersion()
+					// Server is back — reload so the UI picks up any changes
+					window.location.reload()
+				} catch {
+					// Server still down, keep polling
+				}
+			}, 2000)
+		}, 3000)
+
+		return () => {
+			clearTimeout(startDelay)
+			if (pollRef.current) clearInterval(pollRef.current)
+		}
+	}, [restarting])
 
 	const updateMutation = useMutation({
 		mutationFn: () => api.triggerUpdate(),

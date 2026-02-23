@@ -10,6 +10,14 @@ export function useAdminVolumes() {
 	})
 }
 
+export function useAvailableVolumes(enabled: boolean) {
+	return useQuery({
+		queryKey: ['admin', 'volumes', 'available'],
+		queryFn: () => api.adminListAvailableVolumes(),
+		enabled,
+	})
+}
+
 export function useAddVolume() {
 	const queryClient = useQueryClient()
 	return useMutation({

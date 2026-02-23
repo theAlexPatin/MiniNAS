@@ -167,6 +167,10 @@ export const api = {
 		return request('/admin/volumes')
 	},
 
+	adminListAvailableVolumes(): Promise<{ volumes: { name: string; path: string }[] }> {
+		return request('/admin/volumes/available')
+	},
+
 	adminAddVolume(id: string, label: string, path: string): Promise<{ ok: boolean; id: string }> {
 		return request('/admin/volumes', {
 			method: 'POST',

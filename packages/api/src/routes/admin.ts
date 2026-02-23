@@ -1,3 +1,5 @@
+import fs from 'node:fs'
+import path from 'node:path'
 import { spawn } from 'node:child_process'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
@@ -7,7 +9,7 @@ import { getIdentity } from '../security/index.js'
 import { getUserById, resetPasskeys } from '../services/access.js'
 import { scanVolume, unwatchVolume, watchVolume } from '../services/indexer.js'
 import { createInvite } from '../services/invites.js'
-import { addVolume, getVolumeById, removeVolume } from '../services/volumes.js'
+import { addVolume, getVolumeById, getVolumes, removeVolume } from '../services/volumes.js'
 import { createManagementRoutes } from './management.js'
 
 const admin = new Hono()
@@ -21,6 +23,33 @@ admin.get('/volumes', (c) => {
 	const db = getDb()
 	const volumes = db.prepare('SELECT id, label, path, visibility FROM volumes ORDER BY rowid').all()
 	return c.json({ volumes })
+})
+
+admin.get('/volumes/available', (c) => {
+	const VOLUMES_ROOT = '/Volumes'
+	const existing = new Set(getVolumes().map((v) => v.path))
+
+	let entries: string[]
+	try {
+		entries = fs.readdirSync(VOLUMES_ROOT)
+	} catch {
+		return c.json({ volumes: [] })
+	}
+
+	const available = entries
+		.map((name) => {
+			const fullPath = path.join(VOLUMES_ROOT, name)
+			try {
+				const stat = fs.statSync(fullPath)
+				if (!stat.isDirectory()) return null
+				return { name, path: fullPath }
+			} catch {
+				return null
+			}
+		})
+		.filter((v): v is { name: string; path: string } => v !== null && !existing.has(v.path))
+
+	return c.json({ volumes: available })
 })
 
 admin.post('/volumes', async (c) => {

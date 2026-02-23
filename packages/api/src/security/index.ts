@@ -1,5 +1,5 @@
 export { cliAuthMiddleware } from './cli-auth.js'
 export { requireRole } from './require-role.js'
 export { resolveIdentity } from './resolve-identity.js'
-export { getIdentity, getOptionalIdentity, Identity, setIdentity } from './types.js'
+export { getIdentity, getOptionalIdentity, type Identity, setIdentity } from './types.js'
 export { webdavAuthMiddleware } from './webdav-auth.js'

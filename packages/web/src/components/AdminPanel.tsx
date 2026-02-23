@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
 	ArrowLeft,
+	Check,
 	ChevronDown,
 	ChevronRight,
 	Eye,
@@ -14,13 +15,15 @@ import {
 	Trash2,
 	UserPlus,
 	Users,
+	X,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
 	useAddVolume,
 	useAdminInvites,
 	useAdminUsers,
 	useAdminVolumes,
+	useAvailableVolumes,
 	useCreateInvite,
 	useDeleteInvite,
 	useDeleteUser,
@@ -137,6 +140,215 @@ function VolumeAccessPanel({
 	)
 }
 
+// --- Add Volume Modal ---
+
+function labelToId(label: string): string {
+	return label
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/^-+|-+$/g, '')
+}
+
+function AddVolumeModal({
+	onClose,
+	addMutation,
+}: {
+	onClose: () => void
+	addMutation: ReturnType<typeof useAddVolume>
+}) {
+	const { data, isLoading } = useAvailableVolumes(true)
+	const [selectedPath, setSelectedPath] = useState<string | null>(null)
+	const [selectedName, setSelectedName] = useState('')
+	const [label, setLabel] = useState('')
+	const [customId, setCustomId] = useState('')
+	const [useCustomId, setUseCustomId] = useState(false)
+
+	const inferredId = labelToId(label)
+	const finalId = useCustomId ? customId.trim() : inferredId
+
+	const handleSelect = (vol: { name: string; path: string }) => {
+		setSelectedPath(vol.path)
+		setSelectedName(vol.name)
+		setLabel(vol.name)
+		setCustomId('')
+		setUseCustomId(false)
+	}
+
+	const handleSubmit = async () => {
+		if (!selectedPath || !label.trim() || !finalId) return
+		await addMutation.mutateAsync({
+			id: finalId,
+			label: label.trim(),
+			path: selectedPath,
+		})
+		onClose()
+	}
+
+	const handleEscape = useCallback(
+		(e: KeyboardEvent) => {
+			if (e.key === 'Escape') onClose()
+		},
+		[onClose],
+	)
+
+	useEffect(() => {
+		document.addEventListener('keydown', handleEscape)
+		return () => document.removeEventListener('keydown', handleEscape)
+	}, [handleEscape])
+
+	return (
+		<div
+			className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+			onClick={onClose}
+		>
+			<div
+				className="bg-white border border-gray-200 rounded-lg max-w-md w-full shadow-xl"
+				onClick={(e) => e.stopPropagation()}
+			>
+				{/* Header */}
+				<div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+					<h3 className="text-base font-semibold text-gray-900">Add Volume</h3>
+					<button
+						type="button"
+						onClick={onClose}
+						className="p-1 hover:bg-gray-100 rounded transition-colors"
+					>
+						<X size={18} className="text-gray-400" />
+					</button>
+				</div>
+
+				{/* Body */}
+				<div className="px-5 py-4 space-y-4">
+					{/* Step 1: Select a volume */}
+					<div>
+						<p className="text-sm font-medium text-gray-700 mb-2">Select a volume</p>
+						{isLoading ? (
+							<div className="flex justify-center py-6">
+								<Loader2 size={18} className="animate-spin text-gray-400" />
+							</div>
+						) : !data?.volumes?.length ? (
+							<p className="text-sm text-gray-400 py-4 text-center">
+								No available volumes found.
+							</p>
+						) : (
+							<div className="space-y-1 max-h-48 overflow-y-auto">
+								{data.volumes.map((vol) => (
+									<button
+										key={vol.path}
+										type="button"
+										onClick={() => handleSelect(vol)}
+										className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-left transition-colors ${
+											selectedPath === vol.path
+												? 'bg-brand-50 border border-brand-200'
+												: 'hover:bg-gray-50 border border-transparent'
+										}`}
+									>
+										<HardDrive
+											size={16}
+											className={
+												selectedPath === vol.path ? 'text-brand-600' : 'text-gray-400'
+											}
+										/>
+										<div className="min-w-0 flex-1">
+											<p
+												className={`text-sm font-medium ${selectedPath === vol.path ? 'text-brand-700' : 'text-gray-800'}`}
+											>
+												{vol.name}
+											</p>
+											<p className="text-xs text-gray-400 font-mono truncate">{vol.path}</p>
+										</div>
+										{selectedPath === vol.path && (
+											<Check size={16} className="text-brand-600 shrink-0" />
+										)}
+									</button>
+								))}
+							</div>
+						)}
+					</div>
+
+					{/* Step 2: Label & ID (shown after selection) */}
+					{selectedPath && (
+						<div className="space-y-3 pt-2 border-t border-gray-100">
+							<div>
+								<label htmlFor="vol-label" className="block text-sm font-medium text-gray-700 mb-1">
+									Label
+								</label>
+								<input
+									id="vol-label"
+									type="text"
+									value={label}
+									onChange={(e) => setLabel(e.target.value)}
+									placeholder={selectedName}
+									className="w-full bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+								/>
+							</div>
+
+							<div className="flex items-center gap-2">
+								<button
+									type="button"
+									onClick={() => setUseCustomId(!useCustomId)}
+									className={`relative w-8 h-[18px] rounded-full transition-colors ${useCustomId ? 'bg-brand-600' : 'bg-gray-300'}`}
+								>
+									<span
+										className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 bg-white rounded-full shadow transition-transform ${useCustomId ? 'translate-x-[14px]' : ''}`}
+									/>
+								</button>
+								<span className="text-sm text-gray-600">Set custom ID</span>
+							</div>
+
+							{useCustomId ? (
+								<div>
+									<input
+										type="text"
+										value={customId}
+										onChange={(e) => setCustomId(e.target.value)}
+										placeholder="custom-id"
+										className="w-full bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 text-sm font-mono placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+									/>
+								</div>
+							) : (
+								inferredId && (
+									<p className="text-xs text-gray-400">
+										ID: <span className="font-mono">{inferredId}</span>
+									</p>
+								)
+							)}
+						</div>
+					)}
+
+					{addMutation.isError && (
+						<p className="text-sm text-red-600">{(addMutation.error as Error).message}</p>
+					)}
+				</div>
+
+				{/* Footer */}
+				<div className="flex justify-end gap-2 px-5 py-3 border-t border-gray-100">
+					<button
+						type="button"
+						onClick={onClose}
+						className="px-3 py-1.5 text-sm rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+					>
+						Cancel
+					</button>
+					<button
+						type="button"
+						onClick={handleSubmit}
+						disabled={!selectedPath || !label.trim() || !finalId || addMutation.isPending}
+						className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-brand-600 hover:bg-brand-700 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+					>
+						{addMutation.isPending ? (
+							<Loader2 size={16} className="animate-spin" />
+						) : (
+							<Plus size={16} />
+						)}
+						Add Volume
+					</button>
+				</div>
+			</div>
+		</div>
+	)
+}
+
 // --- Volumes Section ---
 
 function VolumesSection() {
@@ -146,22 +358,7 @@ function VolumesSection() {
 	const visibilityMutation = useSetVolumeVisibility()
 	const { data: usersData } = useAdminUsers()
 	const [expandedVolume, setExpandedVolume] = useState<string | null>(null)
-
-	const [newId, setNewId] = useState('')
-	const [newLabel, setNewLabel] = useState('')
-	const [newPath, setNewPath] = useState('')
-
-	const handleAdd = async () => {
-		if (!newId.trim() || !newLabel.trim() || !newPath.trim()) return
-		await addMutation.mutateAsync({
-			id: newId.trim(),
-			label: newLabel.trim(),
-			path: newPath.trim(),
-		})
-		setNewId('')
-		setNewLabel('')
-		setNewPath('')
-	}
+	const [showAddModal, setShowAddModal] = useState(false)
 
 	const handleRemove = (vol: AdminVolume) => {
 		if (
@@ -180,53 +377,24 @@ function VolumesSection() {
 
 	return (
 		<div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-			<div className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
-				<HardDrive size={16} className="text-gray-700" />
-				<h2 className="text-sm font-semibold text-gray-900">Volumes</h2>
+			<div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+				<div className="flex items-center gap-2">
+					<HardDrive size={16} className="text-gray-700" />
+					<h2 className="text-sm font-semibold text-gray-900">Volumes</h2>
+				</div>
+				<button
+					type="button"
+					onClick={() => setShowAddModal(true)}
+					className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md bg-brand-600 hover:bg-brand-700 text-white transition-colors"
+				>
+					<Plus size={14} />
+					Add Volume
+				</button>
 			</div>
 
-			{/* Add Volume Form */}
-			<div className="px-5 py-3 border-b border-gray-100">
-				<div className="flex gap-2 flex-wrap">
-					<input
-						type="text"
-						value={newId}
-						onChange={(e) => setNewId(e.target.value)}
-						placeholder="ID (e.g. media)"
-						className="w-32 bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
-					/>
-					<input
-						type="text"
-						value={newLabel}
-						onChange={(e) => setNewLabel(e.target.value)}
-						placeholder="Label (e.g. Media)"
-						className="w-36 bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
-					/>
-					<input
-						type="text"
-						value={newPath}
-						onChange={(e) => setNewPath(e.target.value)}
-						placeholder="Path (e.g. /mnt/media)"
-						className="flex-1 min-w-[200px] bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
-					/>
-					<button
-						type="button"
-						onClick={handleAdd}
-						disabled={!newId.trim() || !newLabel.trim() || !newPath.trim() || addMutation.isPending}
-						className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-brand-600 hover:bg-brand-700 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-					>
-						{addMutation.isPending ? (
-							<Loader2 size={16} className="animate-spin" />
-						) : (
-							<Plus size={16} />
-						)}
-						Add
-					</button>
-				</div>
-				{addMutation.isError && (
-					<p className="mt-2 text-sm text-red-600">{(addMutation.error as Error).message}</p>
-				)}
-			</div>
+			{showAddModal && (
+				<AddVolumeModal onClose={() => setShowAddModal(false)} addMutation={addMutation} />
+			)}
 
 			{/* Volume List */}
 			{isLoading ? (
