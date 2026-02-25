@@ -1,8 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
-	ChevronRight,
 	FolderPlus,
-	Home,
 	LayoutGrid,
 	List,
 	Loader2,
@@ -20,6 +18,7 @@ import { useUpload } from '../hooks/useUpload'
 import type { FileEntry } from '../lib/api'
 import { BASE_PATH, withBase } from '../lib/basePath'
 import { getFilesFromDataTransfer } from '../lib/drop'
+import Breadcrumbs from './Breadcrumbs'
 import FileGrid from './FileGrid'
 import FileList from './FileList'
 import PreviewModal from './PreviewModal'
@@ -238,27 +237,7 @@ function FileBrowserInner() {
 			{/* Toolbar */}
 			<div className="flex items-center justify-between mb-4">
 				{/* Breadcrumbs */}
-				<nav className="flex items-center gap-1 text-sm overflow-x-auto">
-					<button
-						type="button"
-						onClick={() => navigateTo('')}
-						className="flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors shrink-0"
-					>
-						<Home size={14} />
-					</button>
-					{breadcrumbs.map((crumb) => (
-						<div key={crumb.path} className="flex items-center gap-1 shrink-0">
-							<ChevronRight size={14} className="text-gray-300" />
-							<button
-								type="button"
-								onClick={() => navigateTo(crumb.path)}
-								className="px-2 py-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors"
-							>
-								{crumb.label}
-							</button>
-						</div>
-					))}
-				</nav>
+				<Breadcrumbs segments={breadcrumbs} onNavigate={navigateTo} />
 
 				{/* Actions */}
 				<div className="flex items-center gap-2 shrink-0 ml-4">
