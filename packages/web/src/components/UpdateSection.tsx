@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { Loader2, Package, RefreshCw } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../lib/api'
+import Button from './ui/Button'
 
 export default function UpdateSection() {
 	const [restarting, setRestarting] = useState(false)
@@ -69,23 +70,17 @@ export default function UpdateSection() {
 						Restarting...
 					</div>
 				) : (
-					<button
-						type="button"
+					<Button
 						onClick={() => {
 							if (confirm('Update MiniNAS and restart the server?')) {
 								updateMutation.mutate()
 							}
 						}}
-						disabled={updateMutation.isPending}
-						className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-brand-600 hover:bg-brand-700 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+						loading={updateMutation.isPending}
 					>
-						{updateMutation.isPending ? (
-							<Loader2 size={16} className="animate-spin" />
-						) : (
-							<RefreshCw size={16} />
-						)}
+						<RefreshCw size={16} />
 						Update & Restart
-					</button>
+					</Button>
 				)}
 			</div>
 

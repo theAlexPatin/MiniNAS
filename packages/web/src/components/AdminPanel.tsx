@@ -18,6 +18,8 @@ import {
 	X,
 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+import Badge from './ui/Badge'
+import Tabs from './ui/Tabs'
 import {
 	useAddVolume,
 	useAdminInvites,
@@ -515,9 +517,7 @@ function UsersSection() {
 								<div className="flex items-center gap-2">
 									<p className="text-sm font-medium text-gray-800">{user.username}</p>
 									{user.role === 'admin' && (
-										<span className="px-1.5 py-0.5 text-xs rounded bg-amber-100 text-amber-700 font-medium">
-											admin
-										</span>
+										<Badge variant="warning">admin</Badge>
 									)}
 								</div>
 								<p className="text-xs text-gray-400">Created {formatDate(user.created_at)}</p>
@@ -586,16 +586,8 @@ function InvitesSection() {
 	}
 
 	const statusBadge = (status: 'pending' | 'used' | 'expired') => {
-		const styles = {
-			pending: 'bg-blue-100 text-blue-700',
-			used: 'bg-emerald-100 text-emerald-700',
-			expired: 'bg-gray-100 text-gray-500',
-		}
-		return (
-			<span className={`px-1.5 py-0.5 text-xs rounded font-medium ${styles[status]}`}>
-				{status}
-			</span>
-		)
+		const variantMap = { pending: 'info', used: 'success', expired: 'default' } as const
+		return <Badge variant={variantMap[status]}>{status}</Badge>
 	}
 
 	return (
@@ -688,8 +680,15 @@ function InvitesSection() {
 
 // --- Main Admin Panel ---
 
+const adminTabs = [
+	{ id: 'storage', label: 'Storage' },
+	{ id: 'users', label: 'Users' },
+	{ id: 'system', label: 'System' },
+]
+
 function AdminPanelInner() {
 	const { isAuthenticated, isLoading: authLoading, user } = useAuth()
+	const [activeTab, setActiveTab] = useState('storage')
 
 	if (authLoading) {
 		return (
@@ -712,7 +711,7 @@ function AdminPanelInner() {
 	return (
 		<div className="max-w-3xl mx-auto px-4 py-6">
 			{/* Header */}
-			<div className="flex items-center gap-3 mb-8">
+			<div className="flex items-center gap-3 mb-6">
 				<a
 					href={withBase('/')}
 					className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
@@ -726,11 +725,17 @@ function AdminPanelInner() {
 				</div>
 			</div>
 
-			<div className="space-y-6">
-				<VolumesSection />
-				<UsersSection />
-				<InvitesSection />
-				<UpdateSection />
+			<Tabs tabs={adminTabs} activeTab={activeTab} onChange={setActiveTab} />
+
+			<div className="mt-6 space-y-6">
+				{activeTab === 'storage' && <VolumesSection />}
+				{activeTab === 'users' && (
+					<>
+						<UsersSection />
+						<InvitesSection />
+					</>
+				)}
+				{activeTab === 'system' && <UpdateSection />}
 			</div>
 		</div>
 	)

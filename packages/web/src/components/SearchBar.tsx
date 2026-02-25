@@ -1,6 +1,7 @@
-import { File, Folder, Search, X } from 'lucide-react'
+import { Search, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useSearch } from '../hooks/useSearch'
+import { getFileIcon } from '../lib/fileIcons'
 
 interface SearchBarProps {
 	volume: string
@@ -52,7 +53,7 @@ export default function SearchBar({ volume, onNavigate }: SearchBarProps) {
 							setQuery('')
 							setIsOpen(false)
 						}}
-						className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+						className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600"
 					>
 						<X size={14} />
 					</button>
@@ -82,11 +83,19 @@ export default function SearchBar({ volume, onNavigate }: SearchBarProps) {
 									}}
 									className="w-full flex items-center gap-2.5 px-4 py-2 hover:bg-gray-50 text-left transition-colors"
 								>
-									{isDir ? (
-										<Folder size={16} className="text-blue-500 shrink-0" />
-									) : (
-										<File size={16} className="text-gray-400 shrink-0" />
-									)}
+									<span className="shrink-0">
+										{getFileIcon(
+											{
+												name: result.name,
+												path: result.path,
+												isDirectory: isDir,
+												size: 0,
+												modifiedAt: '',
+												mimeType: null,
+											},
+											16,
+										)}
+									</span>
 									<div className="min-w-0">
 										<p className="text-sm truncate text-gray-900">{result.name}</p>
 										<p className="text-xs text-gray-400 truncate">{result.path}</p>

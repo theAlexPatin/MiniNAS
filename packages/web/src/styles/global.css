@@ -3,6 +3,43 @@
 @tailwind utilities;
 
 @layer base {
+	:root {
+		/* Surfaces */
+		--color-bg-primary: theme('colors.white');
+		--color-bg-secondary: theme('colors.gray.50');
+		--color-bg-tertiary: theme('colors.gray.100');
+
+		/* Text */
+		--color-text-primary: theme('colors.gray.900');
+		--color-text-secondary: theme('colors.gray.500');
+		--color-text-tertiary: theme('colors.gray.400');
+
+		/* Brand */
+		--color-brand-primary: theme('colors.brand.600');
+		--color-brand-hover: theme('colors.brand.700');
+		--color-brand-light: theme('colors.brand.50');
+
+		/* Borders */
+		--color-border-primary: theme('colors.gray.200');
+		--color-border-secondary: theme('colors.gray.100');
+
+		/* Shadows */
+		--shadow-sm: theme('boxShadow.sm');
+		--shadow-md: theme('boxShadow.md');
+		--shadow-lg: theme('boxShadow.lg');
+
+		/* Radii */
+		--radius-sm: theme('borderRadius.md');
+		--radius-md: theme('borderRadius.lg');
+		--radius-lg: theme('borderRadius.xl');
+
+		/* Feedback */
+		--color-success: theme('colors.emerald.600');
+		--color-error: theme('colors.red.500');
+		--color-warning: theme('colors.amber.500');
+		--color-info: theme('colors.blue.500');
+	}
+
 	body {
 		@apply bg-gray-50 text-gray-900 antialiased;
 	}
