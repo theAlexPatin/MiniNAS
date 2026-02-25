@@ -1,8 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
-	ChevronRight,
+	Download,
 	FolderPlus,
-	Home,
+	HardDrive,
 	LayoutGrid,
 	List,
 	Loader2,
@@ -10,16 +10,23 @@ import {
 	RefreshCw,
 	Settings,
 	Shield,
+	Trash2,
 	Upload,
 	UploadCloud,
+	X,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useCreateDirectory, useDeleteFile, useFiles } from '../hooks/useFiles'
+import { useSelection } from '../hooks/useSelection'
+import { useToast } from '../hooks/useToast'
 import { useUpload } from '../hooks/useUpload'
 import type { FileEntry } from '../lib/api'
+import { api } from '../lib/api'
 import { BASE_PATH, withBase } from '../lib/basePath'
 import { getFilesFromDataTransfer } from '../lib/drop'
+import Breadcrumbs from './Breadcrumbs'
+import ContextMenu from './ContextMenu'
 import FileGrid from './FileGrid'
 import FileList from './FileList'
 import PreviewModal from './PreviewModal'
@@ -27,6 +34,9 @@ import SearchBar from './SearchBar'
 import ShareDialog from './ShareDialog'
 import UploadProgress from './UploadProgress'
 import UploadZone from './UploadZone'
+import EmptyState from './ui/EmptyState'
+import { FileGridSkeleton, FileListSkeleton } from './ui/Skeleton'
+import ToastContainer from './ui/Toast'
 import VolumeSelector from './VolumeSelector'
 
 const queryClient = new QueryClient({
@@ -73,6 +83,7 @@ function FileBrowserInner() {
 
 	const { data, isLoading, error, refetch } = useFiles(volume, currentPath)
 
+	const { toasts, addToast, removeToast } = useToast()
 	const deleteMutation = useDeleteFile(volume, currentPath)
 	const mkdirMutation = useCreateDirectory(volume, currentPath)
 	const { uploads, addFiles, pauseUpload, resumeUpload, cancelUpload, clearCompleted } = useUpload(
@@ -84,6 +95,17 @@ function FileBrowserInner() {
 	const [previewFile, setPreviewFile] = useState<FileEntry | null>(null)
 	const [shareFile, setShareFile] = useState<FileEntry | null>(null)
 	const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
+	const [refreshSpinning, setRefreshSpinning] = useState(false)
+	const [contextMenu, setContextMenu] = useState<{ x: number; y: number; file: FileEntry } | null>(
+		null,
+	)
+	const {
+		selected,
+		toggle: toggleSelection,
+		selectAll,
+		clear: clearSelection,
+		count: selectionCount,
+	} = useSelection()
 
 	// Global drag-and-drop: show overlay when files are dragged anywhere on page
 	const [globalDragging, setGlobalDragging] = useState(false)
@@ -130,16 +152,20 @@ function FileBrowserInner() {
 	}, [volume, addFiles])
 
 	// Navigate to a directory path within the current volume
-	const navigateTo = useCallback((newPath: string) => {
-		// Read volume fresh from current locationPath to avoid stale closures
-		const { volume: currentVol } = parsePath(
-			typeof window !== 'undefined' ? window.location.pathname : '/volumes',
-		)
-		const url = buildUrl(currentVol, newPath)
-		history.pushState(null, '', url)
-		setLocationPath(url)
-		setPreviewFile(null)
-	}, [])
+	const navigateTo = useCallback(
+		(newPath: string) => {
+			// Read volume fresh from current locationPath to avoid stale closures
+			const { volume: currentVol } = parsePath(
+				typeof window !== 'undefined' ? window.location.pathname : '/volumes',
+			)
+			const url = buildUrl(currentVol, newPath)
+			history.pushState(null, '', url)
+			setLocationPath(url)
+			setPreviewFile(null)
+			clearSelection()
+		},
+		[clearSelection],
+	)
 
 	// Handle volume selection
 	const handleVolumeSelect = useCallback((id: string) => {
@@ -164,12 +190,39 @@ function FileBrowserInner() {
 		return () => window.removeEventListener('popstate', onPopState)
 	}, [])
 
+	const handleContextMenu = useCallback((file: FileEntry, x: number, y: number) => {
+		setContextMenu({ x, y, file })
+	}, [])
+
+	const handleRename = useCallback(
+		(file: FileEntry) => {
+			const newName = prompt('Rename to:', file.name)
+			if (newName && newName !== file.name) {
+				const parentPath = file.path.includes('/')
+					? file.path.split('/').slice(0, -1).join('/')
+					: ''
+				const destination = parentPath ? `${parentPath}/${newName}` : newName
+				api.moveFile(volume, file.path, destination).then(
+					() => {
+						addToast('success', `Renamed to "${newName}"`)
+						refetch()
+					},
+					(err) => addToast('error', `Rename failed: ${(err as Error).message}`),
+				)
+			}
+		},
+		[volume, addToast, refetch],
+	)
+
 	const handleNewFolder = useCallback(() => {
 		const name = prompt('New folder name:')
 		if (name) {
-			mkdirMutation.mutate(name)
+			mkdirMutation.mutate(name, {
+				onSuccess: () => addToast('success', `Created folder "${name}"`),
+				onError: (err) => addToast('error', `Failed to create folder: ${(err as Error).message}`),
+			})
 		}
-	}, [mkdirMutation])
+	}, [mkdirMutation, addToast])
 
 	// Build breadcrumb segments
 	const pathParts = currentPath.split('/').filter(Boolean)
@@ -194,17 +247,17 @@ function FileBrowserInner() {
 	return (
 		<div className="max-w-6xl mx-auto px-4 py-6">
 			{/* Header */}
-			<div className="flex items-center justify-between mb-6">
-				<div className="flex items-center gap-2.5">
+			<div className="flex items-center justify-between gap-3 mb-6">
+				<div className="flex items-center gap-2.5 shrink-0">
 					<img src="/logo.png" alt="MiniNAS" className="w-8 h-8" />
-					<h1 className="text-xl font-semibold text-gray-900">MiniNAS</h1>
+					<h1 className="text-xl font-semibold text-gray-900 hidden sm:block">MiniNAS</h1>
 				</div>
-				<div className="flex items-center gap-4">
+				<div className="flex items-center gap-2 sm:gap-4 min-w-0">
 					<VolumeSelector selectedVolume={volume} onSelect={handleVolumeSelect} />
 					{user?.role === 'admin' && (
 						<a
 							href={withBase('/admin')}
-							className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+							className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
 							title="Admin"
 						>
 							<Shield size={18} />
@@ -212,7 +265,7 @@ function FileBrowserInner() {
 					)}
 					<a
 						href={withBase('/settings')}
-						className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+						className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
 						title="Settings"
 					>
 						<Settings size={18} />
@@ -220,7 +273,7 @@ function FileBrowserInner() {
 					<button
 						type="button"
 						onClick={logout}
-						className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+						className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
 						title="Sign out"
 					>
 						<LogOut size={18} />
@@ -238,27 +291,7 @@ function FileBrowserInner() {
 			{/* Toolbar */}
 			<div className="flex items-center justify-between mb-4">
 				{/* Breadcrumbs */}
-				<nav className="flex items-center gap-1 text-sm overflow-x-auto">
-					<button
-						type="button"
-						onClick={() => navigateTo('')}
-						className="flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors shrink-0"
-					>
-						<Home size={14} />
-					</button>
-					{breadcrumbs.map((crumb) => (
-						<div key={crumb.path} className="flex items-center gap-1 shrink-0">
-							<ChevronRight size={14} className="text-gray-300" />
-							<button
-								type="button"
-								onClick={() => navigateTo(crumb.path)}
-								className="px-2 py-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors"
-							>
-								{crumb.label}
-							</button>
-						</div>
-					))}
-				</nav>
+				<Breadcrumbs segments={breadcrumbs} onNavigate={navigateTo} />
 
 				{/* Actions */}
 				<div className="flex items-center gap-2 shrink-0 ml-4">
@@ -306,11 +339,16 @@ function FileBrowserInner() {
 					</div>
 					<button
 						type="button"
-						onClick={() => refetch()}
-						className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+						onClick={() => {
+							setRefreshSpinning(true)
+							refetch().finally(() => {
+								setTimeout(() => setRefreshSpinning(false), 400)
+							})
+						}}
+						className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
 						title="Refresh"
 					>
-						<RefreshCw size={16} />
+						<RefreshCw size={16} className={refreshSpinning ? 'animate-spin' : ''} />
 					</button>
 				</div>
 			</div>
@@ -327,13 +365,86 @@ function FileBrowserInner() {
 				</div>
 			)}
 
+			{/* Bulk Action Bar */}
+			{selectionCount > 0 && (
+				<div className="flex items-center gap-3 mb-4 px-4 py-2.5 bg-brand-50 border border-brand-200 rounded-lg">
+					<span className="text-sm font-medium text-brand-700">{selectionCount} selected</span>
+					<div className="flex items-center gap-2 ml-auto">
+						<button
+							type="button"
+							onClick={async () => {
+								const paths = Array.from(selected)
+								try {
+									const res = await fetch(`${withBase('/api/v1')}/download/zip`, {
+										method: 'POST',
+										credentials: 'include',
+										headers: { 'Content-Type': 'application/json' },
+										body: JSON.stringify({ volume, paths }),
+									})
+									if (!res.ok) throw new Error('Download failed')
+									const blob = await res.blob()
+									const url = URL.createObjectURL(blob)
+									const a = document.createElement('a')
+									a.href = url
+									a.download = 'download.zip'
+									a.click()
+									URL.revokeObjectURL(url)
+								} catch (err) {
+									addToast('error', `Download failed: ${(err as Error).message}`)
+								}
+							}}
+							className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 shadow-sm transition-colors"
+						>
+							<Download size={16} />
+							Download
+						</button>
+						<button
+							type="button"
+							onClick={async () => {
+								if (!confirm(`Delete ${selectionCount} items?`)) return
+								const paths = Array.from(selected)
+								let failed = 0
+								for (const path of paths) {
+									try {
+										await api.deleteFile(volume, path)
+									} catch {
+										failed++
+									}
+								}
+								clearSelection()
+								refetch()
+								if (failed > 0) {
+									addToast('error', `Failed to delete ${failed} items`)
+								} else {
+									addToast('success', `Deleted ${paths.length} items`)
+								}
+							}}
+							className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-red-600 hover:bg-red-700 text-white transition-colors"
+						>
+							<Trash2 size={16} />
+							Delete
+						</button>
+						<button
+							type="button"
+							onClick={clearSelection}
+							className="p-1.5 rounded-md hover:bg-brand-100 text-brand-500 transition-colors"
+							title="Clear selection"
+						>
+							<X size={16} />
+						</button>
+					</div>
+				</div>
+			)}
+
 			{/* Content */}
 			{!volume ? (
-				<div className="text-center py-20 text-gray-400">Select a volume to get started</div>
+				<EmptyState icon={HardDrive} title="Select a volume to get started" />
 			) : isLoading ? (
-				<div className="flex items-center justify-center py-20 text-gray-400">
-					<Loader2 size={24} className="animate-spin" />
-				</div>
+				viewMode === 'list' ? (
+					<FileListSkeleton />
+				) : (
+					<FileGridSkeleton />
+				)
 			) : error ? (
 				<div className="text-center py-20 text-red-500">
 					Error loading files: {(error as Error).message}
@@ -343,9 +454,19 @@ function FileBrowserInner() {
 					entries={data?.entries || []}
 					volume={volume}
 					onNavigate={navigateTo}
-					onDelete={(path) => deleteMutation.mutate(path)}
+					onDelete={(path) =>
+						deleteMutation.mutate(path, {
+							onSuccess: () => addToast('success', 'File deleted'),
+							onError: (err) => addToast('error', `Delete failed: ${(err as Error).message}`),
+						})
+					}
 					onPreview={setPreviewFile}
 					onShare={setShareFile}
+					onContextMenu={handleContextMenu}
+					selectable
+					selected={selected}
+					onToggle={toggleSelection}
+					onSelectAll={(paths) => (paths.length > 0 ? selectAll(paths) : clearSelection())}
 				/>
 			) : (
 				<FileGrid
@@ -353,6 +474,10 @@ function FileBrowserInner() {
 					volume={volume}
 					onNavigate={navigateTo}
 					onPreview={setPreviewFile}
+					onContextMenu={handleContextMenu}
+					selectable
+					selected={selected}
+					onToggle={toggleSelection}
 				/>
 			)}
 			{/* Preview Modal */}
@@ -363,6 +488,30 @@ function FileBrowserInner() {
 			{/* Share Dialog */}
 			{shareFile && (
 				<ShareDialog file={shareFile} volume={volume} onClose={() => setShareFile(null)} />
+			)}
+
+			{/* Context Menu */}
+			{contextMenu && (
+				<ContextMenu
+					x={contextMenu.x}
+					y={contextMenu.y}
+					file={contextMenu.file}
+					onClose={() => setContextMenu(null)}
+					onPreview={() => setPreviewFile(contextMenu.file)}
+					onDownload={() => {
+						window.open(api.getDownloadUrl(volume, contextMenu.file.path), '_blank')
+					}}
+					onShare={() => setShareFile(contextMenu.file)}
+					onRename={() => handleRename(contextMenu.file)}
+					onDelete={() => {
+						if (confirm(`Delete "${contextMenu.file.name}"?`)) {
+							deleteMutation.mutate(contextMenu.file.path, {
+								onSuccess: () => addToast('success', 'File deleted'),
+								onError: (err) => addToast('error', `Delete failed: ${(err as Error).message}`),
+							})
+						}
+					}}
+				/>
 			)}
 
 			{/* Upload Progress Panel */}
@@ -383,6 +532,8 @@ function FileBrowserInner() {
 					</div>
 				</div>
 			)}
+
+			<ToastContainer toasts={toasts} onDismiss={removeToast} />
 		</div>
 	)
 }

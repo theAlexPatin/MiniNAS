@@ -61,7 +61,7 @@ export default function ContextMenu({
 						onPreview()
 						onClose()
 					}}
-					className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-gray-50 text-left text-gray-700 transition-colors"
+					className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm hover:bg-gray-50 text-left text-gray-700 transition-colors"
 				>
 					<Eye size={16} className="text-gray-400" />
 					Preview
@@ -74,7 +74,7 @@ export default function ContextMenu({
 						onDownload()
 						onClose()
 					}}
-					className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-gray-50 text-left text-gray-700 transition-colors"
+					className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm hover:bg-gray-50 text-left text-gray-700 transition-colors"
 				>
 					<Download size={16} className="text-gray-400" />
 					Download
@@ -87,7 +87,7 @@ export default function ContextMenu({
 						onShare()
 						onClose()
 					}}
-					className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-gray-50 text-left text-gray-700 transition-colors"
+					className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm hover:bg-gray-50 text-left text-gray-700 transition-colors"
 				>
 					<Link2 size={16} className="text-gray-400" />
 					Share
@@ -99,7 +99,7 @@ export default function ContextMenu({
 					onRename()
 					onClose()
 				}}
-				className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-gray-50 text-left text-gray-700 transition-colors"
+				className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm hover:bg-gray-50 text-left text-gray-700 transition-colors"
 			>
 				<Pencil size={16} className="text-gray-400" />
 				Rename
@@ -111,7 +111,7 @@ export default function ContextMenu({
 					onDelete()
 					onClose()
 				}}
-				className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-red-50 text-left text-red-500 transition-colors"
+				className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm hover:bg-red-50 text-left text-red-500 transition-colors"
 			>
 				<Trash2 size={16} />
 				Delete

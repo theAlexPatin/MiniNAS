@@ -10,6 +10,7 @@ interface PreviewModalProps {
 
 export default function PreviewModal({ file, volume, onClose }: PreviewModalProps) {
 	const downloadUrl = api.getDownloadUrl(volume, file.path)
+	const inlineUrl = api.getInlineUrl(volume, file.path)
 	const mime = file.mimeType || ''
 
 	const handleKeyDown = useCallback(
@@ -31,13 +32,13 @@ export default function PreviewModal({ file, volume, onClose }: PreviewModalProp
 	const renderContent = () => {
 		if (mime.startsWith('image/')) {
 			return (
-				<img src={downloadUrl} alt={file.name} className="max-w-full max-h-[80vh] object-contain" />
+				<img src={inlineUrl} alt={file.name} className="max-w-full max-h-[80vh] object-contain" />
 			)
 		}
 
 		if (mime.startsWith('video/')) {
 			return (
-				<video src={downloadUrl} controls autoPlay className="max-w-full max-h-[80vh]">
+				<video src={inlineUrl} controls autoPlay className="max-w-full max-h-[80vh]">
 					Your browser does not support the video tag.
 				</video>
 			)
@@ -47,7 +48,7 @@ export default function PreviewModal({ file, volume, onClose }: PreviewModalProp
 			return (
 				<div className="p-8">
 					<p className="text-lg font-medium mb-4 text-gray-900">{file.name}</p>
-					<audio src={downloadUrl} controls autoPlay className="w-full">
+					<audio src={inlineUrl} controls autoPlay className="w-full">
 						Your browser does not support the audio tag.
 					</audio>
 				</div>
@@ -55,7 +56,7 @@ export default function PreviewModal({ file, volume, onClose }: PreviewModalProp
 		}
 
 		if (mime === 'application/pdf') {
-			return <iframe src={downloadUrl} className="w-full h-[80vh]" title={file.name} />
+			return <iframe src={inlineUrl} className="w-full h-[80vh]" title={file.name} />
 		}
 
 		if (
@@ -64,7 +65,7 @@ export default function PreviewModal({ file, volume, onClose }: PreviewModalProp
 			mime.includes('xml') ||
 			mime.includes('javascript')
 		) {
-			return <iframe src={downloadUrl} className="w-full h-[80vh] bg-white" title={file.name} />
+			return <iframe src={inlineUrl} className="w-full h-[80vh] bg-white" title={file.name} />
 		}
 
 		return (

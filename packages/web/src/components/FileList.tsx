@@ -1,18 +1,9 @@
-import {
-	Download,
-	File,
-	FileArchive,
-	FileAudio,
-	FileCode,
-	FileImage,
-	FileText,
-	FileVideo,
-	Folder,
-	Link2,
-	Trash2,
-} from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, Download, Folder, Link2, Trash2 } from 'lucide-react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import type { FileEntry } from '../lib/api'
 import { api } from '../lib/api'
+import { getFileIcon, hasThumbnailSupport } from '../lib/fileIcons'
+import EmptyState from './ui/EmptyState'
 
 function formatBytes(bytes: number): string {
 	if (bytes === 0) return '\u2014'
@@ -32,19 +23,15 @@ function formatDate(iso: string): string {
 	})
 }
 
-function getFileIcon(entry: FileEntry) {
-	if (entry.isDirectory) return <Folder size={20} className="text-blue-500" />
-	const mime = entry.mimeType || ''
-	if (mime.startsWith('image/')) return <FileImage size={20} className="text-purple-500" />
-	if (mime.startsWith('video/')) return <FileVideo size={20} className="text-pink-500" />
-	if (mime.startsWith('audio/')) return <FileAudio size={20} className="text-green-500" />
-	if (mime.startsWith('text/')) return <FileText size={20} className="text-amber-500" />
-	if (mime.includes('zip') || mime.includes('tar') || mime.includes('gzip') || mime.includes('rar'))
-		return <FileArchive size={20} className="text-orange-500" />
-	if (mime.includes('json') || mime.includes('javascript') || mime.includes('xml'))
-		return <FileCode size={20} className="text-cyan-600" />
-	return <File size={20} className="text-gray-400" />
+function formatDateShort(iso: string): string {
+	return new Date(iso).toLocaleDateString(undefined, {
+		month: 'short',
+		day: 'numeric',
+	})
 }
+
+type SortField = 'name' | 'size' | 'modified'
+type SortDir = 'asc' | 'desc'
 
 interface FileListProps {
 	entries: FileEntry[]
@@ -53,6 +40,173 @@ interface FileListProps {
 	onDelete: (path: string) => void
 	onPreview?: (file: FileEntry) => void
 	onShare?: (file: FileEntry) => void
+	onContextMenu?: (file: FileEntry, x: number, y: number) => void
+	selectable?: boolean
+	selected?: Set<string>
+	onToggle?: (path: string) => void
+	onSelectAll?: (paths: string[]) => void
+}
+
+function FileListRow({
+	entry,
+	volume,
+	onNavigate,
+	onDelete,
+	onPreview,
+	onShare,
+	onContextMenu,
+	selectable,
+	isSelected,
+	onToggle,
+}: {
+	entry: FileEntry
+	volume: string
+	onNavigate: (path: string) => void
+	onDelete: (path: string) => void
+	onPreview?: (file: FileEntry) => void
+	onShare?: (file: FileEntry) => void
+	onContextMenu?: (file: FileEntry, x: number, y: number) => void
+	selectable?: boolean
+	isSelected?: boolean
+	onToggle?: (path: string) => void
+}) {
+	const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+	const [thumbError, setThumbError] = useState(false)
+
+	const handleTouchStart = useCallback(
+		(e: React.TouchEvent) => {
+			if (!onContextMenu) return
+			const touch = e.touches[0]
+			longPressTimer.current = setTimeout(() => {
+				onContextMenu(entry, touch.clientX, touch.clientY)
+			}, 500)
+		},
+		[entry, onContextMenu],
+	)
+
+	const handleTouchEnd = useCallback(() => {
+		if (longPressTimer.current) {
+			clearTimeout(longPressTimer.current)
+			longPressTimer.current = null
+		}
+	}, [])
+
+	const handleRightClick = useCallback(
+		(e: React.MouseEvent) => {
+			if (!onContextMenu) return
+			e.preventDefault()
+			onContextMenu(entry, e.clientX, e.clientY)
+		},
+		[entry, onContextMenu],
+	)
+
+	const showThumb = hasThumbnailSupport(entry) && !thumbError
+
+	return (
+		<tr
+			className={`border-b border-gray-100 hover:bg-blue-50/60 cursor-pointer group transition-colors ${isSelected ? 'bg-blue-50' : ''}`}
+			onClick={() => {
+				if (entry.isDirectory) {
+					onNavigate(entry.path)
+				} else if (onPreview) {
+					onPreview(entry)
+				}
+			}}
+			onContextMenu={handleRightClick}
+			onTouchStart={handleTouchStart}
+			onTouchEnd={handleTouchEnd}
+			onTouchMove={handleTouchEnd}
+		>
+			{selectable && (
+				<td className="py-3 sm:py-2.5 pl-3 w-8">
+					<input
+						type="checkbox"
+						checked={isSelected}
+						onChange={(e) => {
+							e.stopPropagation()
+							onToggle?.(entry.path)
+						}}
+						onClick={(e) => e.stopPropagation()}
+						className="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+					/>
+				</td>
+			)}
+			<td className="py-3 sm:py-2.5 pl-3">
+				<div className="flex items-center gap-2.5">
+					{showThumb ? (
+						<div className="w-8 h-8 flex-shrink-0 rounded overflow-hidden bg-gray-100 flex items-center justify-center">
+							<img
+								src={api.getPreviewUrl(volume, entry.path, 'small')}
+								alt=""
+								className="w-8 h-8 object-cover"
+								onError={() => setThumbError(true)}
+							/>
+						</div>
+					) : (
+						getFileIcon(entry)
+					)}
+					<div className="min-w-0">
+						<span className="truncate text-gray-900 block">{entry.name}</span>
+						<span className="text-xs text-gray-400 sm:hidden">
+							{entry.isDirectory
+								? formatDateShort(entry.modifiedAt)
+								: `${formatBytes(entry.size)} \u00B7 ${formatDateShort(entry.modifiedAt)}`}
+						</span>
+					</div>
+				</div>
+			</td>
+			<td className="py-3 sm:py-2.5 text-gray-500 hidden sm:table-cell">
+				{entry.isDirectory
+					? entry.childCount !== undefined
+						? `${entry.childCount} item${entry.childCount !== 1 ? 's' : ''}`
+						: '\u2014'
+					: formatBytes(entry.size)}
+			</td>
+			<td className="py-3 sm:py-2.5 text-gray-500 hidden sm:table-cell">
+				{formatDate(entry.modifiedAt)}
+			</td>
+			<td className="py-3 sm:py-2.5 pr-3">
+				<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+					{!entry.isDirectory && (
+						<a
+							href={api.getDownloadUrl(volume, entry.path)}
+							onClick={(e) => e.stopPropagation()}
+							className="p-2 sm:p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-700 transition-colors"
+							title="Download"
+						>
+							<Download size={16} />
+						</a>
+					)}
+					{!entry.isDirectory && onShare && (
+						<button
+							type="button"
+							onClick={(e) => {
+								e.stopPropagation()
+								onShare(entry)
+							}}
+							className="p-2 sm:p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-blue-600 transition-colors"
+							title="Share"
+						>
+							<Link2 size={16} />
+						</button>
+					)}
+					<button
+						type="button"
+						onClick={(e) => {
+							e.stopPropagation()
+							if (confirm(`Delete "${entry.name}"?`)) {
+								onDelete(entry.path)
+							}
+						}}
+						className="p-2 sm:p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+						title="Delete"
+					>
+						<Trash2 size={16} />
+					</button>
+				</div>
+			</td>
+		</tr>
+	)
 }
 
 export default function FileList({
@@ -62,13 +216,59 @@ export default function FileList({
 	onDelete,
 	onPreview,
 	onShare,
+	onContextMenu,
+	selectable,
+	selected,
+	onToggle,
+	onSelectAll,
 }: FileListProps) {
+	const [sortField, setSortField] = useState<SortField>('name')
+	const [sortDir, setSortDir] = useState<SortDir>('asc')
+
+	const toggleSort = (field: SortField) => {
+		if (sortField === field) {
+			setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+		} else {
+			setSortField(field)
+			setSortDir('asc')
+		}
+	}
+
+	const sortedEntries = useMemo(() => {
+		const dirs = entries.filter((e) => e.isDirectory)
+		const files = entries.filter((e) => !e.isDirectory)
+
+		const compare = (a: FileEntry, b: FileEntry): number => {
+			let result = 0
+			switch (sortField) {
+				case 'name':
+					result = a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+					break
+				case 'size':
+					result = a.size - b.size
+					break
+				case 'modified':
+					result = new Date(a.modifiedAt).getTime() - new Date(b.modifiedAt).getTime()
+					break
+			}
+			return sortDir === 'asc' ? result : -result
+		}
+
+		return [...dirs.sort(compare), ...files.sort(compare)]
+	}, [entries, sortField, sortDir])
+
 	if (entries.length === 0) {
-		return (
-			<div className="flex flex-col items-center justify-center py-20 text-gray-400">
-				<Folder size={48} className="mb-3 opacity-50" />
-				<p>This folder is empty</p>
-			</div>
+		return <EmptyState icon={Folder} title="This folder is empty" />
+	}
+
+	const allSelected = selected && entries.length > 0 && entries.every((e) => selected.has(e.path))
+
+	const SortIcon = ({ field }: { field: SortField }) => {
+		if (sortField !== field) return <ArrowUpDown size={14} className="text-gray-300" />
+		return sortDir === 'asc' ? (
+			<ArrowUp size={14} className="text-gray-600" />
+		) : (
+			<ArrowDown size={14} className="text-gray-600" />
 		)
 	}
 
@@ -77,76 +277,70 @@ export default function FileList({
 			<table className="w-full text-sm">
 				<thead>
 					<tr className="border-b border-gray-200 text-gray-500 text-left">
-						<th className="pb-2 pl-3 font-medium">Name</th>
-						<th className="pb-2 font-medium w-28">Size</th>
-						<th className="pb-2 font-medium w-44">Modified</th>
+						{selectable && (
+							<th className="pb-2 pl-3 w-8">
+								<input
+									type="checkbox"
+									checked={allSelected}
+									onChange={() => {
+										if (allSelected) {
+											onSelectAll?.([])
+										} else {
+											onSelectAll?.(entries.map((e) => e.path))
+										}
+									}}
+									className="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+								/>
+							</th>
+						)}
+						<th className="pb-2 pl-3 font-medium">
+							<button
+								type="button"
+								onClick={() => toggleSort('name')}
+								className="inline-flex items-center gap-1 hover:text-gray-700 transition-colors"
+							>
+								Name
+								<SortIcon field="name" />
+							</button>
+						</th>
+						<th className="pb-2 font-medium w-28 hidden sm:table-cell">
+							<button
+								type="button"
+								onClick={() => toggleSort('size')}
+								className="inline-flex items-center gap-1 hover:text-gray-700 transition-colors"
+							>
+								Size
+								<SortIcon field="size" />
+							</button>
+						</th>
+						<th className="pb-2 font-medium w-44 hidden sm:table-cell">
+							<button
+								type="button"
+								onClick={() => toggleSort('modified')}
+								className="inline-flex items-center gap-1 hover:text-gray-700 transition-colors"
+							>
+								Modified
+								<SortIcon field="modified" />
+							</button>
+						</th>
 						<th className="pb-2 font-medium w-20"></th>
 					</tr>
 				</thead>
 				<tbody>
-					{entries.map((entry) => (
-						<tr
+					{sortedEntries.map((entry) => (
+						<FileListRow
 							key={entry.path}
-							className="border-b border-gray-100 hover:bg-blue-50/60 cursor-pointer group transition-colors"
-							onClick={() => {
-								if (entry.isDirectory) {
-									onNavigate(entry.path)
-								} else if (onPreview) {
-									onPreview(entry)
-								}
-							}}
-						>
-							<td className="py-2.5 pl-3">
-								<div className="flex items-center gap-2.5">
-									{getFileIcon(entry)}
-									<span className="truncate text-gray-900">{entry.name}</span>
-								</div>
-							</td>
-							<td className="py-2.5 text-gray-500">
-								{entry.isDirectory ? '\u2014' : formatBytes(entry.size)}
-							</td>
-							<td className="py-2.5 text-gray-500">{formatDate(entry.modifiedAt)}</td>
-							<td className="py-2.5 pr-3">
-								<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-									{!entry.isDirectory && (
-										<a
-											href={api.getDownloadUrl(volume, entry.path)}
-											onClick={(e) => e.stopPropagation()}
-											className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-700 transition-colors"
-											title="Download"
-										>
-											<Download size={16} />
-										</a>
-									)}
-									{!entry.isDirectory && onShare && (
-										<button
-											type="button"
-											onClick={(e) => {
-												e.stopPropagation()
-												onShare(entry)
-											}}
-											className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-blue-600 transition-colors"
-											title="Share"
-										>
-											<Link2 size={16} />
-										</button>
-									)}
-									<button
-										type="button"
-										onClick={(e) => {
-											e.stopPropagation()
-											if (confirm(`Delete "${entry.name}"?`)) {
-												onDelete(entry.path)
-											}
-										}}
-										className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
-										title="Delete"
-									>
-										<Trash2 size={16} />
-									</button>
-								</div>
-							</td>
-						</tr>
+							entry={entry}
+							volume={volume}
+							onNavigate={onNavigate}
+							onDelete={onDelete}
+							onPreview={onPreview}
+							onShare={onShare}
+							onContextMenu={onContextMenu}
+							selectable={selectable}
+							isSelected={selected?.has(entry.path)}
+							onToggle={onToggle}
+						/>
 					))}
 				</tbody>
 			</table>

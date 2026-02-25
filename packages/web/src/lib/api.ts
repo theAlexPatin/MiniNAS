@@ -52,6 +52,7 @@ export interface FileEntry {
 	modifiedAt: string
 	mimeType: string | null
 	hasThumbnail?: boolean
+	childCount?: number
 }
 
 export interface DirectoryListing {
@@ -134,6 +135,14 @@ export const api = {
 
 	getDownloadUrl(volume: string, path: string): string {
 		return `${API_BASE}${volumeUrl('download', volume, path)}`
+	},
+
+	getInlineUrl(volume: string, path: string): string {
+		return `${API_BASE}${volumeUrl('download', volume, path)}?inline`
+	},
+
+	getPreviewUrl(volume: string, path: string, size: 'small' | 'medium' = 'small'): string {
+		return `${API_BASE}${volumeUrl('preview', volume, path)}?size=${size}`
 	},
 
 	createWebDAVToken(label: string): Promise<{ id: string; label: string; token: string }> {
