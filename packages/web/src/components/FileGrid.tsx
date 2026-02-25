@@ -24,7 +24,7 @@ export default function FileGrid({ entries, volume, onNavigate, onPreview }: Fil
 	}
 
 	return (
-		<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+		<div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
 			{entries.map((entry) => (
 				<button
 					type="button"
@@ -36,14 +36,14 @@ export default function FileGrid({ entries, volume, onNavigate, onPreview }: Fil
 							onPreview(entry)
 						}
 					}}
-					className="flex flex-col items-center gap-2 p-3 rounded-lg hover:bg-gray-100 transition-colors group text-center"
+					className="flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-lg hover:bg-gray-100 transition-colors group text-center"
 				>
-					<div className="w-16 h-16 flex items-center justify-center rounded-lg bg-gray-100">
+					<div className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-lg bg-gray-100">
 						{hasThumbnailSupport(entry) ? (
 							<img
 								src={`/api/v1/preview/${encodeURIComponent(volume)}/${entry.path.split('/').map(encodeURIComponent).join('/')}?size=small`}
 								alt=""
-								className="w-16 h-16 object-cover rounded-lg"
+								className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-lg"
 								onError={(e) => {
 									// Fallback to icon on error
 									;(e.target as HTMLImageElement).style.display = 'none'
@@ -56,7 +56,7 @@ export default function FileGrid({ entries, volume, onNavigate, onPreview }: Fil
 						</span>
 					</div>
 					<div className="w-full min-w-0">
-						<p className="text-sm truncate text-gray-900">{entry.name}</p>
+						<p className="text-xs sm:text-sm truncate text-gray-900">{entry.name}</p>
 						{!entry.isDirectory && (
 							<p className="text-xs text-gray-400">{formatBytes(entry.size)}</p>
 						)}
