@@ -80,10 +80,11 @@ download.get('/:volumeId/*', async (c) => {
 		})
 	}
 
-	// Full download
+	// Full download (or inline preview when ?inline is set)
+	const disposition = c.req.query('inline') !== undefined ? 'inline' : 'attachment'
 	c.header('Content-Type', mimeType)
 	c.header('Content-Length', fileSize.toString())
-	c.header('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`)
+	c.header('Content-Disposition', `${disposition}; filename="${encodeURIComponent(fileName)}"`)
 	c.header('Accept-Ranges', 'bytes')
 
 	return stream(c, async (s) => {

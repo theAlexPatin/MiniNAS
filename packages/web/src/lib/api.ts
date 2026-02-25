@@ -137,6 +137,10 @@ export const api = {
 		return `${API_BASE}${volumeUrl('download', volume, path)}`
 	},
 
+	getInlineUrl(volume: string, path: string): string {
+		return `${API_BASE}${volumeUrl('download', volume, path)}?inline`
+	},
+
 	getPreviewUrl(volume: string, path: string, size: 'small' | 'medium' = 'small'): string {
 		return `${API_BASE}${volumeUrl('preview', volume, path)}?size=${size}`
 	},
