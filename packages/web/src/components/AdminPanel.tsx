@@ -36,6 +36,7 @@ import {
 } from '../hooks/useAdmin'
 import { useAuth } from '../hooks/useAuth'
 import type { AdminVolume } from '../lib/api'
+import { APP_NAME } from '../lib/appName'
 import { withBase } from '../lib/basePath'
 import UpdateSection from './UpdateSection'
 import Badge from './ui/Badge'
@@ -362,7 +363,7 @@ function VolumesSection() {
 	const handleRemove = (vol: AdminVolume) => {
 		if (
 			confirm(
-				`Remove volume "${vol.label}" (${vol.id})? This only removes it from MiniNAS — files on disk are not deleted.`,
+				`Remove volume "${vol.label}" (${vol.id})? This only removes it from ${APP_NAME} — files on disk are not deleted.`,
 			)
 		) {
 			removeMutation.mutate(vol.id)

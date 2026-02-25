@@ -63,4 +63,5 @@ export const config = {
 	webDistDir: process.env.WEB_DIST_DIR || '',
 	basePath: normalizeBasePath(process.env.BASE_PATH || ''),
 	version: process.env.MININAS_VERSION || 'dev',
+	appName: process.env.APP_NAME || 'MiniNAS',
 } as const

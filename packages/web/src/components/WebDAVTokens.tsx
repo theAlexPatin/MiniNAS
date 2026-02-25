@@ -7,6 +7,7 @@ import {
 	useRevokeWebDAVToken,
 	useWebDAVTokens,
 } from '../hooks/useWebDAVTokens'
+import { APP_NAME } from '../lib/appName'
 import { withBase } from '../lib/basePath'
 import Tabs from './ui/Tabs'
 
@@ -81,7 +82,7 @@ function SetupGuide({ serverUrl, username }: { serverUrl: string; username?: str
 								<strong>Connect to Server</strong> (&#8984;K)
 							</li>
 							<li>Paste the server URL above and click Connect</li>
-							<li>Enter your MiniNAS username and the generated token as the password</li>
+							<li>Enter your {APP_NAME} username and the generated token as the password</li>
 						</ol>
 					)}
 					{osTab === 'windows' && (
@@ -93,7 +94,7 @@ function SetupGuide({ serverUrl, username }: { serverUrl: string; username?: str
 							</li>
 							<li>Paste the server URL in the Folder field</li>
 							<li>Check "Connect using different credentials"</li>
-							<li>Enter your MiniNAS username and the generated token as the password</li>
+							<li>Enter your {APP_NAME} username and the generated token as the password</li>
 						</ol>
 					)}
 					{osTab === 'linux' && (
@@ -110,7 +111,7 @@ function SetupGuide({ serverUrl, username }: { serverUrl: string; username?: str
 									sudo mount -t davfs {serverUrl} /mnt/mininas
 								</code>
 							</li>
-							<li>Enter your MiniNAS username and the generated token as the password</li>
+							<li>Enter your {APP_NAME} username and the generated token as the password</li>
 						</ol>
 					)}
 				</div>

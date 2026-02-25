@@ -86,10 +86,12 @@ export function createStaticMiddleware(distDir: string) {
 		const raw = fs.readFileSync(filePath)
 		const cacheControl = ext === '.html' ? 'no-cache' : 'public, max-age=31536000, immutable'
 
-		// For HTML files: inject __BASE_PATH__ and rewrite asset references
+		// For HTML files: inject __BASE_PATH__ / __APP_NAME__ and rewrite asset references
 		if (ext === '.html') {
 			let html = raw.toString('utf-8')
-			html = html.replace('<head>', `<head><script>window.__BASE_PATH__="${bp}";</script>`)
+			const appName = config.appName
+			html = html.replace('<head>', `<head><script>window.__BASE_PATH__="${bp}";window.__APP_NAME__=${JSON.stringify(appName)};</script>`)
+			html = html.replace(/<title>MiniNAS(.*?)<\/title>/g, `<title>${appName}$1</title>`)
 			if (bp) {
 				// Rewrite Astro-generated asset references
 				html = html.replace(/href="\//g, `href="${bp}/`)

@@ -23,6 +23,7 @@ import { useToast } from '../hooks/useToast'
 import { useUpload } from '../hooks/useUpload'
 import type { FileEntry } from '../lib/api'
 import { api } from '../lib/api'
+import { APP_NAME } from '../lib/appName'
 import { BASE_PATH, withBase } from '../lib/basePath'
 import { getFilesFromDataTransfer } from '../lib/drop'
 import Breadcrumbs from './Breadcrumbs'
@@ -265,8 +266,8 @@ function FileBrowserInner() {
 			{/* Header */}
 			<div className="flex items-center justify-between gap-3 mb-6">
 				<a href={withBase('/')} className="flex items-center gap-2.5 shrink-0 hover:opacity-80 transition-opacity">
-					<img src="/logo.png" alt="MiniNAS" className="w-8 h-8" />
-					<h1 className="text-xl font-semibold text-gray-900 hidden sm:block">MiniNAS</h1>
+					<img src="/logo.png" alt={APP_NAME} className="w-8 h-8" />
+					<h1 className="text-xl font-semibold text-gray-900 hidden sm:block">{APP_NAME}</h1>
 				</a>
 				<div className="flex items-center gap-2 sm:gap-4 min-w-0">
 					<VolumeSelector selectedVolume={volume} onSelect={handleVolumeSelect} />
