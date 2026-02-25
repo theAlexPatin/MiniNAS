@@ -22,6 +22,13 @@ function formatDate(iso: string): string {
 	})
 }
 
+function formatDateShort(iso: string): string {
+	return new Date(iso).toLocaleDateString(undefined, {
+		month: 'short',
+		day: 'numeric',
+	})
+}
+
 interface FileListProps {
 	entries: FileEntry[]
 	volume: string
@@ -49,8 +56,8 @@ export default function FileList({
 				<thead>
 					<tr className="border-b border-gray-200 text-gray-500 text-left">
 						<th className="pb-2 pl-3 font-medium">Name</th>
-						<th className="pb-2 font-medium w-28">Size</th>
-						<th className="pb-2 font-medium w-44">Modified</th>
+						<th className="pb-2 font-medium w-28 hidden sm:table-cell">Size</th>
+						<th className="pb-2 font-medium w-44 hidden sm:table-cell">Modified</th>
 						<th className="pb-2 font-medium w-20"></th>
 					</tr>
 				</thead>
@@ -70,13 +77,22 @@ export default function FileList({
 							<td className="py-3 sm:py-2.5 pl-3">
 								<div className="flex items-center gap-2.5">
 									{getFileIcon(entry)}
-									<span className="truncate text-gray-900">{entry.name}</span>
+									<div className="min-w-0">
+										<span className="truncate text-gray-900 block">{entry.name}</span>
+										<span className="text-xs text-gray-400 sm:hidden">
+											{entry.isDirectory
+												? formatDateShort(entry.modifiedAt)
+												: `${formatBytes(entry.size)} \u00B7 ${formatDateShort(entry.modifiedAt)}`}
+										</span>
+									</div>
 								</div>
 							</td>
-							<td className="py-3 sm:py-2.5 text-gray-500">
+							<td className="py-3 sm:py-2.5 text-gray-500 hidden sm:table-cell">
 								{entry.isDirectory ? '\u2014' : formatBytes(entry.size)}
 							</td>
-							<td className="py-3 sm:py-2.5 text-gray-500">{formatDate(entry.modifiedAt)}</td>
+							<td className="py-3 sm:py-2.5 text-gray-500 hidden sm:table-cell">
+								{formatDate(entry.modifiedAt)}
+							</td>
 							<td className="py-3 sm:py-2.5 pr-3">
 								<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
 									{!entry.isDirectory && (
