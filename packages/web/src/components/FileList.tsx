@@ -44,6 +44,8 @@ interface FileListProps {
 	selectable?: boolean
 	selected?: Set<string>
 	onToggle?: (path: string) => void
+	onShiftSelect?: (paths: string[]) => void
+	lastToggled?: string | null
 	onSelectAll?: (paths: string[]) => void
 }
 
@@ -57,7 +59,7 @@ function FileListRow({
 	onContextMenu,
 	selectable,
 	isSelected,
-	onToggle,
+	onCheckboxClick,
 }: {
 	entry: FileEntry
 	volume: string
@@ -68,7 +70,7 @@ function FileListRow({
 	onContextMenu?: (file: FileEntry, x: number, y: number) => void
 	selectable?: boolean
 	isSelected?: boolean
-	onToggle?: (path: string) => void
+	onCheckboxClick?: (path: string, shiftKey: boolean) => void
 }) {
 	const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 	const [thumbError, setThumbError] = useState(false)
@@ -118,16 +120,19 @@ function FileListRow({
 			onTouchMove={handleTouchEnd}
 		>
 			{selectable && (
-				<td className="py-3 sm:py-2.5 pl-3 w-8">
+				<td
+					className="py-3 sm:py-2.5 pl-3 w-8 cursor-pointer"
+					onMouseDown={(e) => { if (e.shiftKey) e.preventDefault() }}
+					onClick={(e) => {
+						e.stopPropagation()
+						onCheckboxClick?.(entry.path, e.shiftKey)
+					}}
+				>
 					<input
 						type="checkbox"
 						checked={isSelected}
-						onChange={(e) => {
-							e.stopPropagation()
-							onToggle?.(entry.path)
-						}}
-						onClick={(e) => e.stopPropagation()}
-						className="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+						readOnly
+						className="rounded border-gray-300 text-brand-600 focus:ring-brand-500 pointer-events-none"
 					/>
 				</td>
 			)}
@@ -220,6 +225,8 @@ export default function FileList({
 	selectable,
 	selected,
 	onToggle,
+	onShiftSelect,
+	lastToggled,
 	onSelectAll,
 }: FileListProps) {
 	const [sortField, setSortField] = useState<SortField>('name')
@@ -257,6 +264,24 @@ export default function FileList({
 		return [...dirs.sort(compare), ...files.sort(compare)]
 	}, [entries, sortField, sortDir])
 
+	const handleCheckboxClick = useCallback(
+		(path: string, shiftKey: boolean) => {
+			if (shiftKey && lastToggled && onShiftSelect) {
+				const currentIndex = sortedEntries.findIndex((e) => e.path === path)
+				const lastIndex = sortedEntries.findIndex((e) => e.path === lastToggled)
+				if (currentIndex !== -1 && lastIndex !== -1) {
+					const start = Math.min(currentIndex, lastIndex)
+					const end = Math.max(currentIndex, lastIndex)
+					const rangePaths = sortedEntries.slice(start, end + 1).map((e) => e.path)
+					onShiftSelect(rangePaths)
+					return
+				}
+			}
+			onToggle?.(path)
+		},
+		[sortedEntries, lastToggled, onShiftSelect, onToggle],
+	)
+
 	if (entries.length === 0) {
 		return <EmptyState icon={Folder} title="This folder is empty" />
 	}
@@ -278,18 +303,21 @@ export default function FileList({
 				<thead>
 					<tr className="border-b border-gray-200 text-gray-500 text-left">
 						{selectable && (
-							<th className="pb-2 pl-3 w-8">
+							<th
+								className="pb-2 pl-3 w-8 cursor-pointer"
+								onClick={() => {
+									if (allSelected) {
+										onSelectAll?.([])
+									} else {
+										onSelectAll?.(entries.map((e) => e.path))
+									}
+								}}
+							>
 								<input
 									type="checkbox"
 									checked={allSelected}
-									onChange={() => {
-										if (allSelected) {
-											onSelectAll?.([])
-										} else {
-											onSelectAll?.(entries.map((e) => e.path))
-										}
-									}}
-									className="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+									readOnly
+									className="rounded border-gray-300 text-brand-600 focus:ring-brand-500 pointer-events-none"
 								/>
 							</th>
 						)}
@@ -339,7 +367,7 @@ export default function FileList({
 							onContextMenu={onContextMenu}
 							selectable={selectable}
 							isSelected={selected?.has(entry.path)}
-							onToggle={onToggle}
+							onCheckboxClick={handleCheckboxClick}
 						/>
 					))}
 				</tbody>

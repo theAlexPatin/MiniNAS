@@ -1,7 +1,8 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import VolumePicker from "../components/VolumePicker";
 ---
 
 <Layout title="MiniNAS">
-  <script is:inline>window.location.replace((window.__BASE_PATH__ || "") + "/volumes");</script>
+  <VolumePicker client:load />
 </Layout>

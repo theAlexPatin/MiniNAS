@@ -1,5 +1,5 @@
 import { Folder } from 'lucide-react'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import type { FileEntry } from '../lib/api'
 import { api } from '../lib/api'
 import { getFileIcon, hasThumbnailSupport } from '../lib/fileIcons'
@@ -22,6 +22,8 @@ interface FileGridProps {
 	selectable?: boolean
 	selected?: Set<string>
 	onToggle?: (path: string) => void
+	onShiftSelect?: (paths: string[]) => void
+	lastToggled?: string | null
 }
 
 function FileGridItem({
@@ -32,7 +34,7 @@ function FileGridItem({
 	onContextMenu,
 	selectable,
 	isSelected,
-	onToggle,
+	onCheckboxClick,
 }: {
 	entry: FileEntry
 	volume: string
@@ -41,7 +43,7 @@ function FileGridItem({
 	onContextMenu?: (file: FileEntry, x: number, y: number) => void
 	selectable?: boolean
 	isSelected?: boolean
-	onToggle?: (path: string) => void
+	onCheckboxClick?: (path: string, shiftKey: boolean) => void
 }) {
 	const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 	const [thumbError, setThumbError] = useState(false)
@@ -79,13 +81,18 @@ function FileGridItem({
 		<div className="relative">
 			{selectable && (
 				<div
-					className={`absolute top-1 left-1 z-10 ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}
+					className={`absolute top-0 left-0 z-10 p-2 cursor-pointer ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}
+					onMouseDown={(e) => { if (e.shiftKey) e.preventDefault() }}
+					onClick={(e) => {
+						e.stopPropagation()
+						onCheckboxClick?.(entry.path, e.shiftKey)
+					}}
 				>
 					<input
 						type="checkbox"
 						checked={isSelected}
-						onChange={() => onToggle?.(entry.path)}
-						className="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+						readOnly
+						className="rounded border-gray-300 text-brand-600 focus:ring-brand-500 pointer-events-none"
 					/>
 				</div>
 			)}
@@ -104,7 +111,7 @@ function FileGridItem({
 				onTouchMove={handleTouchEnd}
 				className={`w-full flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-lg hover:bg-gray-100 transition-colors group text-center ${isSelected ? 'bg-blue-50 ring-2 ring-brand-200' : ''}`}
 			>
-				<div className="w-14 h-14 sm:w-20 sm:h-20 md:w-24 md:h-24 flex items-center justify-center rounded-lg bg-gray-50 group-hover:bg-gray-200/60 transition-colors overflow-hidden">
+				<div className="w-14 h-14 sm:w-20 sm:h-20 md:w-24 md:h-24 flex items-center justify-center rounded-lg bg-gray-50 group-hover:bg-white transition-colors overflow-hidden">
 					{showThumb ? (
 						<img
 							src={api.getPreviewUrl(volume, entry.path, 'medium')}
@@ -134,7 +141,27 @@ export default function FileGrid({
 	selectable,
 	selected,
 	onToggle,
+	onShiftSelect,
+	lastToggled,
 }: FileGridProps) {
+	const handleCheckboxClick = useCallback(
+		(path: string, shiftKey: boolean) => {
+			if (shiftKey && lastToggled && onShiftSelect) {
+				const currentIndex = entries.findIndex((e) => e.path === path)
+				const lastIndex = entries.findIndex((e) => e.path === lastToggled)
+				if (currentIndex !== -1 && lastIndex !== -1) {
+					const start = Math.min(currentIndex, lastIndex)
+					const end = Math.max(currentIndex, lastIndex)
+					const rangePaths = entries.slice(start, end + 1).map((e) => e.path)
+					onShiftSelect(rangePaths)
+					return
+				}
+			}
+			onToggle?.(path)
+		},
+		[entries, lastToggled, onShiftSelect, onToggle],
+	)
+
 	if (entries.length === 0) {
 		return <EmptyState icon={Folder} title="This folder is empty" />
 	}
@@ -151,7 +178,7 @@ export default function FileGrid({
 					onContextMenu={onContextMenu}
 					selectable={selectable}
 					isSelected={selected?.has(entry.path)}
-					onToggle={onToggle}
+					onCheckboxClick={handleCheckboxClick}
 				/>
 			))}
 		</div>
