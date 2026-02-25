@@ -95,6 +95,7 @@ function FileBrowserInner() {
 	const [previewFile, setPreviewFile] = useState<FileEntry | null>(null)
 	const [shareFile, setShareFile] = useState<FileEntry | null>(null)
 	const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
+	const [refreshSpinning, setRefreshSpinning] = useState(false)
 	const [contextMenu, setContextMenu] = useState<{ x: number; y: number; file: FileEntry } | null>(
 		null,
 	)
@@ -338,11 +339,16 @@ function FileBrowserInner() {
 					</div>
 					<button
 						type="button"
-						onClick={() => refetch()}
+						onClick={() => {
+							setRefreshSpinning(true)
+							refetch().finally(() => {
+								setTimeout(() => setRefreshSpinning(false), 400)
+							})
+						}}
 						className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
 						title="Refresh"
 					>
-						<RefreshCw size={16} />
+						<RefreshCw size={16} className={refreshSpinning ? 'animate-spin' : ''} />
 					</button>
 				</div>
 			</div>
