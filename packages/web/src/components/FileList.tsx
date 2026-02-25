@@ -1,4 +1,5 @@
-import { Download, Folder, Link2, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, Download, Folder, Link2, Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import type { FileEntry } from '../lib/api'
 import { api } from '../lib/api'
 import { getFileIcon } from '../lib/fileIcons'
@@ -29,6 +30,9 @@ function formatDateShort(iso: string): string {
 	})
 }
 
+type SortField = 'name' | 'size' | 'modified'
+type SortDir = 'asc' | 'desc'
+
 interface FileListProps {
 	entries: FileEntry[]
 	volume: string
@@ -46,8 +50,52 @@ export default function FileList({
 	onPreview,
 	onShare,
 }: FileListProps) {
+	const [sortField, setSortField] = useState<SortField>('name')
+	const [sortDir, setSortDir] = useState<SortDir>('asc')
+
+	const toggleSort = (field: SortField) => {
+		if (sortField === field) {
+			setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+		} else {
+			setSortField(field)
+			setSortDir('asc')
+		}
+	}
+
+	const sortedEntries = useMemo(() => {
+		const dirs = entries.filter((e) => e.isDirectory)
+		const files = entries.filter((e) => !e.isDirectory)
+
+		const compare = (a: FileEntry, b: FileEntry): number => {
+			let result = 0
+			switch (sortField) {
+				case 'name':
+					result = a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+					break
+				case 'size':
+					result = a.size - b.size
+					break
+				case 'modified':
+					result = new Date(a.modifiedAt).getTime() - new Date(b.modifiedAt).getTime()
+					break
+			}
+			return sortDir === 'asc' ? result : -result
+		}
+
+		return [...dirs.sort(compare), ...files.sort(compare)]
+	}, [entries, sortField, sortDir])
+
 	if (entries.length === 0) {
 		return <EmptyState icon={Folder} title="This folder is empty" />
+	}
+
+	const SortIcon = ({ field }: { field: SortField }) => {
+		if (sortField !== field) return <ArrowUpDown size={14} className="text-gray-300" />
+		return sortDir === 'asc' ? (
+			<ArrowUp size={14} className="text-gray-600" />
+		) : (
+			<ArrowDown size={14} className="text-gray-600" />
+		)
 	}
 
 	return (
@@ -55,14 +103,41 @@ export default function FileList({
 			<table className="w-full text-sm">
 				<thead>
 					<tr className="border-b border-gray-200 text-gray-500 text-left">
-						<th className="pb-2 pl-3 font-medium">Name</th>
-						<th className="pb-2 font-medium w-28 hidden sm:table-cell">Size</th>
-						<th className="pb-2 font-medium w-44 hidden sm:table-cell">Modified</th>
+						<th className="pb-2 pl-3 font-medium">
+							<button
+								type="button"
+								onClick={() => toggleSort('name')}
+								className="inline-flex items-center gap-1 hover:text-gray-700 transition-colors"
+							>
+								Name
+								<SortIcon field="name" />
+							</button>
+						</th>
+						<th className="pb-2 font-medium w-28 hidden sm:table-cell">
+							<button
+								type="button"
+								onClick={() => toggleSort('size')}
+								className="inline-flex items-center gap-1 hover:text-gray-700 transition-colors"
+							>
+								Size
+								<SortIcon field="size" />
+							</button>
+						</th>
+						<th className="pb-2 font-medium w-44 hidden sm:table-cell">
+							<button
+								type="button"
+								onClick={() => toggleSort('modified')}
+								className="inline-flex items-center gap-1 hover:text-gray-700 transition-colors"
+							>
+								Modified
+								<SortIcon field="modified" />
+							</button>
+						</th>
 						<th className="pb-2 font-medium w-20"></th>
 					</tr>
 				</thead>
 				<tbody>
-					{entries.map((entry) => (
+					{sortedEntries.map((entry) => (
 						<tr
 							key={entry.path}
 							className="border-b border-gray-100 hover:bg-blue-50/60 cursor-pointer group transition-colors"
