@@ -18,6 +18,7 @@ import {
 	X,
 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+import Badge from './ui/Badge'
 import {
 	useAddVolume,
 	useAdminInvites,
@@ -515,9 +516,7 @@ function UsersSection() {
 								<div className="flex items-center gap-2">
 									<p className="text-sm font-medium text-gray-800">{user.username}</p>
 									{user.role === 'admin' && (
-										<span className="px-1.5 py-0.5 text-xs rounded bg-amber-100 text-amber-700 font-medium">
-											admin
-										</span>
+										<Badge variant="warning">admin</Badge>
 									)}
 								</div>
 								<p className="text-xs text-gray-400">Created {formatDate(user.created_at)}</p>
@@ -586,16 +585,8 @@ function InvitesSection() {
 	}
 
 	const statusBadge = (status: 'pending' | 'used' | 'expired') => {
-		const styles = {
-			pending: 'bg-blue-100 text-blue-700',
-			used: 'bg-emerald-100 text-emerald-700',
-			expired: 'bg-gray-100 text-gray-500',
-		}
-		return (
-			<span className={`px-1.5 py-0.5 text-xs rounded font-medium ${styles[status]}`}>
-				{status}
-			</span>
-		)
+		const variantMap = { pending: 'info', used: 'success', expired: 'default' } as const
+		return <Badge variant={variantMap[status]}>{status}</Badge>
 	}
 
 	return (
