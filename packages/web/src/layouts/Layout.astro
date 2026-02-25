@@ -1,9 +1,13 @@
 ---
+import { getAppName } from '../lib/appName.server';
+
 interface Props {
   title: string;
 }
 
+const appName = getAppName();
 const { title } = Astro.props;
+const resolvedTitle = title.replaceAll('MiniNAS', appName);
 ---
 
 <!doctype html>
@@ -19,7 +23,7 @@ const { title } = Astro.props;
     <link rel="manifest" href="/manifest.json" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <title>{title}</title>
+    <title>{resolvedTitle}</title>
   </head>
   <body class="min-h-screen">
     <slot />

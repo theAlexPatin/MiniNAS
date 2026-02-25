@@ -1,7 +1,8 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 
 export function useSelection() {
 	const [selected, setSelected] = useState<Set<string>>(new Set())
+	const lastToggled = useRef<string | null>(null)
 
 	const toggle = useCallback((path: string) => {
 		setSelected((prev) => {
@@ -13,6 +14,20 @@ export function useSelection() {
 			}
 			return next
 		})
+		lastToggled.current = path
+	}, [])
+
+	const selectRange = useCallback((paths: string[]) => {
+		setSelected((prev) => {
+			const next = new Set(prev)
+			for (const p of paths) {
+				next.add(p)
+			}
+			return next
+		})
+		if (paths.length > 0) {
+			lastToggled.current = paths[paths.length - 1]
+		}
 	}, [])
 
 	const selectAll = useCallback((paths: string[]) => {
@@ -21,9 +36,19 @@ export function useSelection() {
 
 	const clear = useCallback(() => {
 		setSelected(new Set())
+		lastToggled.current = null
 	}, [])
 
 	const isSelected = useCallback((path: string) => selected.has(path), [selected])
 
-	return { selected, toggle, selectAll, clear, isSelected, count: selected.size }
+	return {
+		selected,
+		toggle,
+		selectRange,
+		selectAll,
+		clear,
+		isSelected,
+		count: selected.size,
+		lastToggled: lastToggled.current,
+	}
 }

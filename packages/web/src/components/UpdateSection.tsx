@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { Loader2, Package, RefreshCw } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../lib/api'
+import { APP_NAME } from '../lib/appName'
 import Button from './ui/Button'
 
 export default function UpdateSection() {
@@ -72,7 +73,7 @@ export default function UpdateSection() {
 				) : (
 					<Button
 						onClick={() => {
-							if (confirm('Update MiniNAS and restart the server?')) {
+							if (confirm(`Update ${APP_NAME} and restart the server?`)) {
 								updateMutation.mutate()
 							}
 						}}
@@ -86,7 +87,7 @@ export default function UpdateSection() {
 
 			{updateMutation.isError && (
 				<p className="mt-2 text-sm text-red-600">
-					Failed to trigger update. Is MiniNAS installed via Homebrew?
+					Failed to trigger update. Is {APP_NAME} installed via Homebrew?
 				</p>
 			)}
 		</div>

@@ -23,6 +23,7 @@ import { useToast } from '../hooks/useToast'
 import { useUpload } from '../hooks/useUpload'
 import type { FileEntry } from '../lib/api'
 import { api } from '../lib/api'
+import { APP_NAME } from '../lib/appName'
 import { BASE_PATH, withBase } from '../lib/basePath'
 import { getFilesFromDataTransfer } from '../lib/drop'
 import Breadcrumbs from './Breadcrumbs'
@@ -102,10 +103,26 @@ function FileBrowserInner() {
 	const {
 		selected,
 		toggle: toggleSelection,
+		selectRange,
 		selectAll,
 		clear: clearSelection,
 		count: selectionCount,
+		lastToggled,
 	} = useSelection()
+
+	const fileAreaRef = useRef<HTMLDivElement>(null)
+
+	useEffect(() => {
+		if (selectionCount === 0) return
+		const onClick = (e: MouseEvent) => {
+			if (fileAreaRef.current?.contains(e.target as Node)) return
+			// Don't clear if clicking inside the bulk action bar
+			if ((e.target as HTMLElement).closest('[data-bulk-actions]')) return
+			clearSelection()
+		}
+		window.addEventListener('click', onClick)
+		return () => window.removeEventListener('click', onClick)
+	}, [selectionCount, clearSelection])
 
 	// Global drag-and-drop: show overlay when files are dragged anywhere on page
 	const [globalDragging, setGlobalDragging] = useState(false)
@@ -245,13 +262,16 @@ function FileBrowserInner() {
 	}
 
 	return (
-		<div className="max-w-6xl mx-auto px-4 py-6">
+		<div className={`max-w-6xl mx-auto px-4 py-6 ${selectionCount > 0 ? 'pb-20' : ''}`}>
 			{/* Header */}
 			<div className="flex items-center justify-between gap-3 mb-6">
-				<div className="flex items-center gap-2.5 shrink-0">
-					<img src="/logo.png" alt="MiniNAS" className="w-8 h-8" />
-					<h1 className="text-xl font-semibold text-gray-900 hidden sm:block">MiniNAS</h1>
-				</div>
+				<a
+					href={withBase('/')}
+					className="flex items-center gap-2.5 shrink-0 hover:opacity-80 transition-opacity"
+				>
+					<img src="/logo.png" alt={APP_NAME} className="w-8 h-8" />
+					<h1 className="text-xl font-semibold text-gray-900 hidden sm:block">{APP_NAME}</h1>
+				</a>
 				<div className="flex items-center gap-2 sm:gap-4 min-w-0">
 					<VolumeSelector selectedVolume={volume} onSelect={handleVolumeSelect} />
 					{user?.role === 'admin' && (
@@ -365,121 +385,136 @@ function FileBrowserInner() {
 				</div>
 			)}
 
-			{/* Bulk Action Bar */}
-			{selectionCount > 0 && (
-				<div className="flex items-center gap-3 mb-4 px-4 py-2.5 bg-brand-50 border border-brand-200 rounded-lg">
-					<span className="text-sm font-medium text-brand-700">{selectionCount} selected</span>
-					<div className="flex items-center gap-2 ml-auto">
-						<button
-							type="button"
-							onClick={async () => {
-								const paths = Array.from(selected)
-								try {
-									const res = await fetch(`${withBase('/api/v1')}/download/zip`, {
-										method: 'POST',
-										credentials: 'include',
-										headers: { 'Content-Type': 'application/json' },
-										body: JSON.stringify({ volume, paths }),
-									})
-									if (!res.ok) throw new Error('Download failed')
-									const blob = await res.blob()
-									const url = URL.createObjectURL(blob)
-									const a = document.createElement('a')
-									a.href = url
-									a.download = 'download.zip'
-									a.click()
-									URL.revokeObjectURL(url)
-								} catch (err) {
-									addToast('error', `Download failed: ${(err as Error).message}`)
-								}
-							}}
-							className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 shadow-sm transition-colors"
-						>
-							<Download size={16} />
-							Download
-						</button>
-						<button
-							type="button"
-							onClick={async () => {
-								if (!confirm(`Delete ${selectionCount} items?`)) return
-								const paths = Array.from(selected)
-								let failed = 0
-								for (const path of paths) {
+			{/* Bulk Action Bar - fixed bottom */}
+			<div
+				className={`fixed bottom-0 left-0 right-0 z-40 transition-transform duration-200 ease-out ${selectionCount > 0 ? 'translate-y-0' : 'translate-y-full'}`}
+			>
+				<div
+					data-bulk-actions
+					className="bg-white/95 backdrop-blur-sm border-t border-gray-200 shadow-[0_-2px_10px_rgba(0,0,0,0.08)]"
+				>
+					<div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
+						<span className="text-sm font-medium text-brand-700 whitespace-nowrap">
+							{selectionCount} selected
+						</span>
+						<div className="flex items-center gap-2 ml-auto">
+							<button
+								type="button"
+								onClick={async () => {
+									const paths = Array.from(selected)
 									try {
-										await api.deleteFile(volume, path)
-									} catch {
-										failed++
+										const res = await fetch(`${withBase('/api/v1')}/download/zip`, {
+											method: 'POST',
+											credentials: 'include',
+											headers: { 'Content-Type': 'application/json' },
+											body: JSON.stringify({ volume, paths }),
+										})
+										if (!res.ok) throw new Error('Download failed')
+										const blob = await res.blob()
+										const url = URL.createObjectURL(blob)
+										const a = document.createElement('a')
+										a.href = url
+										a.download = 'download.zip'
+										a.click()
+										URL.revokeObjectURL(url)
+									} catch (err) {
+										addToast('error', `Download failed: ${(err as Error).message}`)
 									}
-								}
-								clearSelection()
-								refetch()
-								if (failed > 0) {
-									addToast('error', `Failed to delete ${failed} items`)
-								} else {
-									addToast('success', `Deleted ${paths.length} items`)
-								}
-							}}
-							className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-red-600 hover:bg-red-700 text-white transition-colors"
-						>
-							<Trash2 size={16} />
-							Delete
-						</button>
-						<button
-							type="button"
-							onClick={clearSelection}
-							className="p-1.5 rounded-md hover:bg-brand-100 text-brand-500 transition-colors"
-							title="Clear selection"
-						>
-							<X size={16} />
-						</button>
+								}}
+								className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-md bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 shadow-sm transition-colors"
+							>
+								<Download size={16} />
+								<span className="hidden sm:inline">Download</span>
+							</button>
+							<button
+								type="button"
+								onClick={async () => {
+									if (!confirm(`Delete ${selectionCount} items?`)) return
+									const paths = Array.from(selected)
+									let failed = 0
+									for (const path of paths) {
+										try {
+											await api.deleteFile(volume, path)
+										} catch {
+											failed++
+										}
+									}
+									clearSelection()
+									refetch()
+									if (failed > 0) {
+										addToast('error', `Failed to delete ${failed} items`)
+									} else {
+										addToast('success', `Deleted ${paths.length} items`)
+									}
+								}}
+								className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-md bg-red-600 hover:bg-red-700 text-white transition-colors"
+							>
+								<Trash2 size={16} />
+								<span className="hidden sm:inline">Delete</span>
+							</button>
+							<button
+								type="button"
+								onClick={clearSelection}
+								className="p-2 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+								title="Clear selection"
+							>
+								<X size={16} />
+							</button>
+						</div>
 					</div>
 				</div>
-			)}
+			</div>
 
 			{/* Content */}
-			{!volume ? (
-				<EmptyState icon={HardDrive} title="Select a volume to get started" />
-			) : isLoading ? (
-				viewMode === 'list' ? (
-					<FileListSkeleton />
+			<div ref={fileAreaRef}>
+				{!volume ? (
+					<EmptyState icon={HardDrive} title="Select a volume to get started" />
+				) : isLoading ? (
+					viewMode === 'list' ? (
+						<FileListSkeleton />
+					) : (
+						<FileGridSkeleton />
+					)
+				) : error ? (
+					<div className="text-center py-20 text-red-500">
+						Error loading files: {(error as Error).message}
+					</div>
+				) : viewMode === 'list' ? (
+					<FileList
+						entries={data?.entries || []}
+						volume={volume}
+						onNavigate={navigateTo}
+						onDelete={(path) =>
+							deleteMutation.mutate(path, {
+								onSuccess: () => addToast('success', 'File deleted'),
+								onError: (err) => addToast('error', `Delete failed: ${(err as Error).message}`),
+							})
+						}
+						onPreview={setPreviewFile}
+						onShare={setShareFile}
+						onContextMenu={handleContextMenu}
+						selectable
+						selected={selected}
+						onToggle={toggleSelection}
+						onShiftSelect={selectRange}
+						lastToggled={lastToggled}
+						onSelectAll={(paths) => (paths.length > 0 ? selectAll(paths) : clearSelection())}
+					/>
 				) : (
-					<FileGridSkeleton />
-				)
-			) : error ? (
-				<div className="text-center py-20 text-red-500">
-					Error loading files: {(error as Error).message}
-				</div>
-			) : viewMode === 'list' ? (
-				<FileList
-					entries={data?.entries || []}
-					volume={volume}
-					onNavigate={navigateTo}
-					onDelete={(path) =>
-						deleteMutation.mutate(path, {
-							onSuccess: () => addToast('success', 'File deleted'),
-							onError: (err) => addToast('error', `Delete failed: ${(err as Error).message}`),
-						})
-					}
-					onPreview={setPreviewFile}
-					onShare={setShareFile}
-					onContextMenu={handleContextMenu}
-					selectable
-					selected={selected}
-					onToggle={toggleSelection}
-					onSelectAll={(paths) => (paths.length > 0 ? selectAll(paths) : clearSelection())}
-				/>
-			) : (
-				<FileGrid
-					entries={data?.entries || []}
-					volume={volume}
-					onNavigate={navigateTo}
-					onPreview={setPreviewFile}
-					onContextMenu={handleContextMenu}
-					selectable
-					selected={selected}
-					onToggle={toggleSelection}
-				/>
-			)}
+					<FileGrid
+						entries={data?.entries || []}
+						volume={volume}
+						onNavigate={navigateTo}
+						onPreview={setPreviewFile}
+						onContextMenu={handleContextMenu}
+						selectable
+						selected={selected}
+						onToggle={toggleSelection}
+						onShiftSelect={selectRange}
+						lastToggled={lastToggled}
+					/>
+				)}
+			</div>
 			{/* Preview Modal */}
 			{previewFile && (
 				<PreviewModal file={previewFile} volume={volume} onClose={() => setPreviewFile(null)} />

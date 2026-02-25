@@ -1,5 +1,6 @@
 import { CheckCircle, Fingerprint, Loader2, ShieldX } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { APP_NAME } from '../lib/appName'
 import { withBase } from '../lib/basePath'
 import { checkSetupNeeded, registerPasskey } from '../lib/passkeys'
 
@@ -51,7 +52,7 @@ export default function PasskeySetup() {
 			<div className="min-h-screen flex items-center justify-center px-4">
 				<div className="max-w-md w-full">
 					<div className="text-center mb-8">
-						<img src="/logo.png" alt="MiniNAS" className="w-24 h-24 mx-auto mb-4" />
+						<img src="/logo.png" alt={APP_NAME} className="w-24 h-24 mx-auto mb-4" />
 						<h1 className="text-2xl font-bold mb-2 text-gray-900">Setup Unavailable</h1>
 						<p className="text-gray-500">
 							An admin account has already been configured. Setup can only be run once during
@@ -83,8 +84,8 @@ export default function PasskeySetup() {
 		<div className="min-h-screen flex items-center justify-center px-4">
 			<div className="max-w-md w-full">
 				<div className="text-center mb-8">
-					<img src="/logo.png" alt="MiniNAS" className="w-24 h-24 mx-auto mb-4" />
-					<h1 className="text-2xl font-bold mb-2 text-gray-900">Welcome to MiniNAS</h1>
+					<img src="/logo.png" alt={APP_NAME} className="w-24 h-24 mx-auto mb-4" />
+					<h1 className="text-2xl font-bold mb-2 text-gray-900">Welcome to {APP_NAME}</h1>
 					<p className="text-gray-500">
 						Set up your passkey to secure your NAS. This will use your device's biometric
 						authentication (Touch ID, Face ID, etc.)

@@ -1,5 +1,6 @@
 import { Fingerprint, Loader2 } from 'lucide-react'
 import { useState } from 'react'
+import { APP_NAME } from '../lib/appName'
 import { withBase } from '../lib/basePath'
 import { authenticatePasskey } from '../lib/passkeys'
 
@@ -28,8 +29,8 @@ export default function PasskeyLogin() {
 		<div className="min-h-screen flex items-center justify-center px-4">
 			<div className="max-w-md w-full">
 				<div className="text-center mb-8">
-					<img src="/logo.png" alt="MiniNAS" className="w-24 h-24 mx-auto mb-4" />
-					<h1 className="text-2xl font-bold mb-2 text-gray-900">MiniNAS</h1>
+					<img src="/logo.png" alt={APP_NAME} className="w-24 h-24 mx-auto mb-4" />
+					<h1 className="text-2xl font-bold mb-2 text-gray-900">{APP_NAME}</h1>
 					<p className="text-gray-500">Sign in with your passkey</p>
 				</div>
 
