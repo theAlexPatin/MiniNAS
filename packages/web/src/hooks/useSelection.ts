@@ -41,5 +41,14 @@ export function useSelection() {
 
 	const isSelected = useCallback((path: string) => selected.has(path), [selected])
 
-	return { selected, toggle, selectRange, selectAll, clear, isSelected, count: selected.size, lastToggled: lastToggled.current }
+	return {
+		selected,
+		toggle,
+		selectRange,
+		selectAll,
+		clear,
+		isSelected,
+		count: selected.size,
+		lastToggled: lastToggled.current,
+	}
 }

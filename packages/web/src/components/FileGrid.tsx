@@ -1,5 +1,5 @@
 import { Folder } from 'lucide-react'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import type { FileEntry } from '../lib/api'
 import { api } from '../lib/api'
 import { getFileIcon, hasThumbnailSupport } from '../lib/fileIcons'
@@ -82,7 +82,9 @@ function FileGridItem({
 			{selectable && (
 				<div
 					className={`absolute top-0 left-0 z-10 p-2 cursor-pointer ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}
-					onMouseDown={(e) => { if (e.shiftKey) e.preventDefault() }}
+					onMouseDown={(e) => {
+						if (e.shiftKey) e.preventDefault()
+					}}
 					onClick={(e) => {
 						e.stopPropagation()
 						onCheckboxClick?.(entry.path, e.shiftKey)

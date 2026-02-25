@@ -122,7 +122,9 @@ function FileListRow({
 			{selectable && (
 				<td
 					className="py-3 sm:py-2.5 pl-3 w-8 cursor-pointer"
-					onMouseDown={(e) => { if (e.shiftKey) e.preventDefault() }}
+					onMouseDown={(e) => {
+						if (e.shiftKey) e.preventDefault()
+					}}
 					onClick={(e) => {
 						e.stopPropagation()
 						onCheckboxClick?.(entry.path, e.shiftKey)

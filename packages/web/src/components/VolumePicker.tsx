@@ -21,7 +21,8 @@ function formatBytes(bytes: number): string {
 
 function VolumeTile({ volume }: { volume: VolumeInfo }) {
 	const usagePercent = volume.totalBytes > 0 ? (volume.usedBytes / volume.totalBytes) * 100 : 0
-	const barColor = usagePercent > 90 ? 'bg-red-500' : usagePercent > 75 ? 'bg-amber-500' : 'bg-brand-500'
+	const barColor =
+		usagePercent > 90 ? 'bg-red-500' : usagePercent > 75 ? 'bg-amber-500' : 'bg-brand-500'
 
 	return (
 		<a
@@ -38,7 +39,10 @@ function VolumeTile({ volume }: { volume: VolumeInfo }) {
 			</div>
 			<div>
 				<div className="h-2 rounded-full bg-gray-100 overflow-hidden">
-					<div className={`h-full rounded-full ${barColor} transition-all`} style={{ width: `${usagePercent}%` }} />
+					<div
+						className={`h-full rounded-full ${barColor} transition-all`}
+						style={{ width: `${usagePercent}%` }}
+					/>
 				</div>
 				<p className="text-sm text-gray-500 mt-1.5">
 					{formatBytes(volume.usedBytes)} used of {formatBytes(volume.totalBytes)}
@@ -150,7 +154,9 @@ function VolumePickerInner() {
 				</div>
 			) : (
 				<>
-					<h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">Volumes</h2>
+					<h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-4">
+						Volumes
+					</h2>
 					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 						{volumes.map((v) => (
 							<VolumeTile key={v.id} volume={v} />
