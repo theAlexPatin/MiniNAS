@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import Badge from './ui/Badge'
+import Tabs from './ui/Tabs'
 import {
 	useAddVolume,
 	useAdminInvites,
@@ -679,8 +680,15 @@ function InvitesSection() {
 
 // --- Main Admin Panel ---
 
+const adminTabs = [
+	{ id: 'storage', label: 'Storage' },
+	{ id: 'users', label: 'Users' },
+	{ id: 'system', label: 'System' },
+]
+
 function AdminPanelInner() {
 	const { isAuthenticated, isLoading: authLoading, user } = useAuth()
+	const [activeTab, setActiveTab] = useState('storage')
 
 	if (authLoading) {
 		return (
@@ -703,7 +711,7 @@ function AdminPanelInner() {
 	return (
 		<div className="max-w-3xl mx-auto px-4 py-6">
 			{/* Header */}
-			<div className="flex items-center gap-3 mb-8">
+			<div className="flex items-center gap-3 mb-6">
 				<a
 					href={withBase('/')}
 					className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
@@ -717,11 +725,17 @@ function AdminPanelInner() {
 				</div>
 			</div>
 
-			<div className="space-y-6">
-				<VolumesSection />
-				<UsersSection />
-				<InvitesSection />
-				<UpdateSection />
+			<Tabs tabs={adminTabs} activeTab={activeTab} onChange={setActiveTab} />
+
+			<div className="mt-6 space-y-6">
+				{activeTab === 'storage' && <VolumesSection />}
+				{activeTab === 'users' && (
+					<>
+						<UsersSection />
+						<InvitesSection />
+					</>
+				)}
+				{activeTab === 'system' && <UpdateSection />}
 			</div>
 		</div>
 	)
