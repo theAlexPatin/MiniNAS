@@ -1,15 +1,6 @@
-import {
-	File,
-	FileArchive,
-	FileAudio,
-	FileCode,
-	FileImage,
-	FileText,
-	FileVideo,
-	Folder,
-} from 'lucide-react'
+import { Folder } from 'lucide-react'
 import type { FileEntry } from '../lib/api'
-import { api } from '../lib/api'
+import { getFileIcon, hasThumbnailSupport } from '../lib/fileIcons'
 
 function formatBytes(bytes: number): string {
 	if (bytes === 0) return ''
@@ -17,25 +8,6 @@ function formatBytes(bytes: number): string {
 	const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
 	const i = Math.floor(Math.log(bytes) / Math.log(k))
 	return `${parseFloat((bytes / k ** i).toFixed(1))} ${sizes[i]}`
-}
-
-function getFileIcon(entry: FileEntry, size: number) {
-	if (entry.isDirectory) return <Folder size={size} className="text-blue-500" />
-	const mime = entry.mimeType || ''
-	if (mime.startsWith('image/')) return <FileImage size={size} className="text-purple-500" />
-	if (mime.startsWith('video/')) return <FileVideo size={size} className="text-pink-500" />
-	if (mime.startsWith('audio/')) return <FileAudio size={size} className="text-green-500" />
-	if (mime.startsWith('text/')) return <FileText size={size} className="text-amber-500" />
-	if (mime.includes('zip') || mime.includes('tar') || mime.includes('gzip'))
-		return <FileArchive size={size} className="text-orange-500" />
-	if (mime.includes('json') || mime.includes('javascript') || mime.includes('xml'))
-		return <FileCode size={size} className="text-cyan-600" />
-	return <File size={size} className="text-gray-400" />
-}
-
-function hasThumbnailSupport(entry: FileEntry): boolean {
-	const mime = entry.mimeType || ''
-	return mime.startsWith('image/') || mime.startsWith('video/')
 }
 
 interface FileGridProps {

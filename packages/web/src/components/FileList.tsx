@@ -1,18 +1,7 @@
-import {
-	Download,
-	File,
-	FileArchive,
-	FileAudio,
-	FileCode,
-	FileImage,
-	FileText,
-	FileVideo,
-	Folder,
-	Link2,
-	Trash2,
-} from 'lucide-react'
+import { Download, Folder, Link2, Trash2 } from 'lucide-react'
 import type { FileEntry } from '../lib/api'
 import { api } from '../lib/api'
+import { getFileIcon } from '../lib/fileIcons'
 
 function formatBytes(bytes: number): string {
 	if (bytes === 0) return '\u2014'
@@ -30,20 +19,6 @@ function formatDate(iso: string): string {
 		hour: '2-digit',
 		minute: '2-digit',
 	})
-}
-
-function getFileIcon(entry: FileEntry) {
-	if (entry.isDirectory) return <Folder size={20} className="text-blue-500" />
-	const mime = entry.mimeType || ''
-	if (mime.startsWith('image/')) return <FileImage size={20} className="text-purple-500" />
-	if (mime.startsWith('video/')) return <FileVideo size={20} className="text-pink-500" />
-	if (mime.startsWith('audio/')) return <FileAudio size={20} className="text-green-500" />
-	if (mime.startsWith('text/')) return <FileText size={20} className="text-amber-500" />
-	if (mime.includes('zip') || mime.includes('tar') || mime.includes('gzip') || mime.includes('rar'))
-		return <FileArchive size={20} className="text-orange-500" />
-	if (mime.includes('json') || mime.includes('javascript') || mime.includes('xml'))
-		return <FileCode size={20} className="text-cyan-600" />
-	return <File size={20} className="text-gray-400" />
 }
 
 interface FileListProps {
