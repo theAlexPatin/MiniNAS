@@ -104,7 +104,7 @@ function FileGridItem({
 				onTouchMove={handleTouchEnd}
 				className={`w-full flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-lg hover:bg-gray-100 transition-colors group text-center ${isSelected ? 'bg-blue-50 ring-2 ring-brand-200' : ''}`}
 			>
-				<div className="w-14 h-14 sm:w-20 sm:h-20 md:w-24 md:h-24 flex items-center justify-center rounded-lg bg-gray-100 overflow-hidden">
+				<div className="w-14 h-14 sm:w-20 sm:h-20 md:w-24 md:h-24 flex items-center justify-center rounded-lg bg-gray-50 group-hover:bg-gray-200/60 transition-colors overflow-hidden">
 					{showThumb ? (
 						<img
 							src={api.getPreviewUrl(volume, entry.path, 'medium')}
