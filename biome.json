@@ -18,7 +18,13 @@
 			},
 			"correctness": {
 				"noUnusedVariables": "warn",
-				"noUnusedImports": "warn"
+				"noUnusedImports": "warn",
+				"noUnknownFunction": {
+					"level": "error",
+					"options": {
+						"ignore": ["theme"]
+					}
+				}
 			},
 			"suspicious": {
 				"noVar": "error",

@@ -18,8 +18,6 @@ import {
 	X,
 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
-import Badge from './ui/Badge'
-import Tabs from './ui/Tabs'
 import {
 	useAddVolume,
 	useAdminInvites,
@@ -40,6 +38,8 @@ import { useAuth } from '../hooks/useAuth'
 import type { AdminVolume } from '../lib/api'
 import { withBase } from '../lib/basePath'
 import UpdateSection from './UpdateSection'
+import Badge from './ui/Badge'
+import Tabs from './ui/Tabs'
 
 const queryClient = new QueryClient({
 	defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
@@ -516,9 +516,7 @@ function UsersSection() {
 							<div className="min-w-0">
 								<div className="flex items-center gap-2">
 									<p className="text-sm font-medium text-gray-800">{user.username}</p>
-									{user.role === 'admin' && (
-										<Badge variant="warning">admin</Badge>
-									)}
+									{user.role === 'admin' && <Badge variant="warning">admin</Badge>}
 								</div>
 								<p className="text-xs text-gray-400">Created {formatDate(user.created_at)}</p>
 							</div>

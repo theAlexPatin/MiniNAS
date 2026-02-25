@@ -14,6 +14,7 @@ export function FileListSkeleton({ rows = 8 }: { rows?: number }) {
 			</div>
 			{/* Rows */}
 			{Array.from({ length: rows }).map((_, i) => (
+				// biome-ignore lint/suspicious/noArrayIndexKey: static placeholder rows
 				<div key={i} className="flex items-center gap-3 py-3 border-b border-gray-100">
 					<Skeleton className="w-5 h-5 rounded ml-3" />
 					<Skeleton className="h-4 flex-1 max-w-[200px]" />
@@ -30,6 +31,7 @@ export function FileGridSkeleton({ items = 10 }: { items?: number }) {
 	return (
 		<div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
 			{Array.from({ length: items }).map((_, i) => (
+				// biome-ignore lint/suspicious/noArrayIndexKey: static placeholder items
 				<div key={i} className="flex flex-col items-center gap-2 p-2 sm:p-3">
 					<Skeleton className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg" />
 					<Skeleton className="h-3 w-16 sm:w-20" />

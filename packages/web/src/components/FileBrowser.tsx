@@ -22,14 +22,11 @@ import { useSelection } from '../hooks/useSelection'
 import { useToast } from '../hooks/useToast'
 import { useUpload } from '../hooks/useUpload'
 import type { FileEntry } from '../lib/api'
+import { api } from '../lib/api'
 import { BASE_PATH, withBase } from '../lib/basePath'
 import { getFilesFromDataTransfer } from '../lib/drop'
-import { api } from '../lib/api'
 import Breadcrumbs from './Breadcrumbs'
 import ContextMenu from './ContextMenu'
-import EmptyState from './ui/EmptyState'
-import { FileGridSkeleton, FileListSkeleton } from './ui/Skeleton'
-import ToastContainer from './ui/Toast'
 import FileGrid from './FileGrid'
 import FileList from './FileList'
 import PreviewModal from './PreviewModal'
@@ -37,6 +34,9 @@ import SearchBar from './SearchBar'
 import ShareDialog from './ShareDialog'
 import UploadProgress from './UploadProgress'
 import UploadZone from './UploadZone'
+import EmptyState from './ui/EmptyState'
+import { FileGridSkeleton, FileListSkeleton } from './ui/Skeleton'
+import ToastContainer from './ui/Toast'
 import VolumeSelector from './VolumeSelector'
 
 const queryClient = new QueryClient({
@@ -98,7 +98,13 @@ function FileBrowserInner() {
 	const [contextMenu, setContextMenu] = useState<{ x: number; y: number; file: FileEntry } | null>(
 		null,
 	)
-	const { selected, toggle: toggleSelection, selectAll, clear: clearSelection, count: selectionCount } = useSelection()
+	const {
+		selected,
+		toggle: toggleSelection,
+		selectAll,
+		clear: clearSelection,
+		count: selectionCount,
+	} = useSelection()
 
 	// Global drag-and-drop: show overlay when files are dragged anywhere on page
 	const [globalDragging, setGlobalDragging] = useState(false)
@@ -145,17 +151,20 @@ function FileBrowserInner() {
 	}, [volume, addFiles])
 
 	// Navigate to a directory path within the current volume
-	const navigateTo = useCallback((newPath: string) => {
-		// Read volume fresh from current locationPath to avoid stale closures
-		const { volume: currentVol } = parsePath(
-			typeof window !== 'undefined' ? window.location.pathname : '/volumes',
-		)
-		const url = buildUrl(currentVol, newPath)
-		history.pushState(null, '', url)
-		setLocationPath(url)
-		setPreviewFile(null)
-		clearSelection()
-	}, [clearSelection])
+	const navigateTo = useCallback(
+		(newPath: string) => {
+			// Read volume fresh from current locationPath to avoid stale closures
+			const { volume: currentVol } = parsePath(
+				typeof window !== 'undefined' ? window.location.pathname : '/volumes',
+			)
+			const url = buildUrl(currentVol, newPath)
+			history.pushState(null, '', url)
+			setLocationPath(url)
+			setPreviewFile(null)
+			clearSelection()
+		},
+		[clearSelection],
+	)
 
 	// Handle volume selection
 	const handleVolumeSelect = useCallback((id: string) => {
@@ -188,7 +197,9 @@ function FileBrowserInner() {
 		(file: FileEntry) => {
 			const newName = prompt('Rename to:', file.name)
 			if (newName && newName !== file.name) {
-				const parentPath = file.path.includes('/') ? file.path.split('/').slice(0, -1).join('/') : ''
+				const parentPath = file.path.includes('/')
+					? file.path.split('/').slice(0, -1).join('/')
+					: ''
 				const destination = parentPath ? `${parentPath}/${newName}` : newName
 				api.moveFile(volume, file.path, destination).then(
 					() => {
@@ -351,9 +362,7 @@ function FileBrowserInner() {
 			{/* Bulk Action Bar */}
 			{selectionCount > 0 && (
 				<div className="flex items-center gap-3 mb-4 px-4 py-2.5 bg-brand-50 border border-brand-200 rounded-lg">
-					<span className="text-sm font-medium text-brand-700">
-						{selectionCount} selected
-					</span>
+					<span className="text-sm font-medium text-brand-700">{selectionCount} selected</span>
 					<div className="flex items-center gap-2 ml-auto">
 						<button
 							type="button"
@@ -425,7 +434,11 @@ function FileBrowserInner() {
 			{!volume ? (
 				<EmptyState icon={HardDrive} title="Select a volume to get started" />
 			) : isLoading ? (
-				viewMode === 'list' ? <FileListSkeleton /> : <FileGridSkeleton />
+				viewMode === 'list' ? (
+					<FileListSkeleton />
+				) : (
+					<FileGridSkeleton />
+				)
 			) : error ? (
 				<div className="text-center py-20 text-red-500">
 					Error loading files: {(error as Error).message}
@@ -488,8 +501,7 @@ function FileBrowserInner() {
 						if (confirm(`Delete "${contextMenu.file.name}"?`)) {
 							deleteMutation.mutate(contextMenu.file.path, {
 								onSuccess: () => addToast('success', 'File deleted'),
-								onError: (err) =>
-									addToast('error', `Delete failed: ${(err as Error).message}`),
+								onError: (err) => addToast('error', `Delete failed: ${(err as Error).message}`),
 							})
 						}
 					}}

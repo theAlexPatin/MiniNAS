@@ -81,33 +81,28 @@ function SetupGuide({ serverUrl, username }: { serverUrl: string; username?: str
 								<strong>Connect to Server</strong> (&#8984;K)
 							</li>
 							<li>Paste the server URL above and click Connect</li>
-							<li>
-								Enter your MiniNAS username and the generated token as the
-								password
-							</li>
+							<li>Enter your MiniNAS username and the generated token as the password</li>
 						</ol>
 					)}
 					{osTab === 'windows' && (
 						<ol className="text-sm text-gray-600 space-y-2 list-decimal list-inside">
 							<li>Create an access token in the "Access Tokens" tab</li>
 							<li>
-								Open <strong>File Explorer</strong> &rarr; right-click{' '}
-								<strong>This PC</strong> &rarr; <strong>Map Network Drive</strong>
+								Open <strong>File Explorer</strong> &rarr; right-click <strong>This PC</strong>{' '}
+								&rarr; <strong>Map Network Drive</strong>
 							</li>
 							<li>Paste the server URL in the Folder field</li>
 							<li>Check "Connect using different credentials"</li>
-							<li>
-								Enter your MiniNAS username and the generated token as the
-								password
-							</li>
+							<li>Enter your MiniNAS username and the generated token as the password</li>
 						</ol>
 					)}
 					{osTab === 'linux' && (
 						<ol className="text-sm text-gray-600 space-y-2 list-decimal list-inside">
 							<li>Create an access token in the "Access Tokens" tab</li>
 							<li>
-								Open your file manager and enter <code className="bg-gray-100 px-1 rounded text-xs">davs://</code> followed by
-								the server address in the location bar
+								Open your file manager and enter{' '}
+								<code className="bg-gray-100 px-1 rounded text-xs">davs://</code> followed by the
+								server address in the location bar
 							</li>
 							<li>
 								Or mount via command line:{' '}
@@ -115,10 +110,7 @@ function SetupGuide({ serverUrl, username }: { serverUrl: string; username?: str
 									sudo mount -t davfs {serverUrl} /mnt/mininas
 								</code>
 							</li>
-							<li>
-								Enter your MiniNAS username and the generated token as the
-								password
-							</li>
+							<li>Enter your MiniNAS username and the generated token as the password</li>
 						</ol>
 					)}
 				</div>
@@ -299,9 +291,7 @@ function WebDAVTokensInner() {
 			<Tabs tabs={mainTabs} activeTab={activeTab} onChange={setActiveTab} />
 
 			<div className="mt-6">
-				{activeTab === 'guide' && (
-					<SetupGuide serverUrl={serverUrl} username={user?.username} />
-				)}
+				{activeTab === 'guide' && <SetupGuide serverUrl={serverUrl} username={user?.username} />}
 				{activeTab === 'tokens' && <AccessTokens />}
 			</div>
 		</div>
