@@ -1,6 +1,7 @@
 import { Folder } from 'lucide-react'
 import type { FileEntry } from '../lib/api'
 import { getFileIcon, hasThumbnailSupport } from '../lib/fileIcons'
+import EmptyState from './ui/EmptyState'
 
 function formatBytes(bytes: number): string {
 	if (bytes === 0) return ''
@@ -19,12 +20,7 @@ interface FileGridProps {
 
 export default function FileGrid({ entries, volume, onNavigate, onPreview }: FileGridProps) {
 	if (entries.length === 0) {
-		return (
-			<div className="flex flex-col items-center justify-center py-20 text-gray-400">
-				<Folder size={48} className="mb-3 opacity-50" />
-				<p>This folder is empty</p>
-			</div>
-		)
+		return <EmptyState icon={Folder} title="This folder is empty" />
 	}
 
 	return (

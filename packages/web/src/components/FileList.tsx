@@ -2,6 +2,7 @@ import { Download, Folder, Link2, Trash2 } from 'lucide-react'
 import type { FileEntry } from '../lib/api'
 import { api } from '../lib/api'
 import { getFileIcon } from '../lib/fileIcons'
+import EmptyState from './ui/EmptyState'
 
 function formatBytes(bytes: number): string {
 	if (bytes === 0) return '\u2014'
@@ -39,12 +40,7 @@ export default function FileList({
 	onShare,
 }: FileListProps) {
 	if (entries.length === 0) {
-		return (
-			<div className="flex flex-col items-center justify-center py-20 text-gray-400">
-				<Folder size={48} className="mb-3 opacity-50" />
-				<p>This folder is empty</p>
-			</div>
-		)
+		return <EmptyState icon={Folder} title="This folder is empty" />
 	}
 
 	return (

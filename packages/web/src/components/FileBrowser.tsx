@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
 	FolderPlus,
+	HardDrive,
 	LayoutGrid,
 	List,
 	Loader2,
@@ -19,6 +20,7 @@ import type { FileEntry } from '../lib/api'
 import { BASE_PATH, withBase } from '../lib/basePath'
 import { getFilesFromDataTransfer } from '../lib/drop'
 import Breadcrumbs from './Breadcrumbs'
+import EmptyState from './ui/EmptyState'
 import FileGrid from './FileGrid'
 import FileList from './FileList'
 import PreviewModal from './PreviewModal'
@@ -308,7 +310,7 @@ function FileBrowserInner() {
 
 			{/* Content */}
 			{!volume ? (
-				<div className="text-center py-20 text-gray-400">Select a volume to get started</div>
+				<EmptyState icon={HardDrive} title="Select a volume to get started" />
 			) : isLoading ? (
 				<div className="flex items-center justify-center py-20 text-gray-400">
 					<Loader2 size={24} className="animate-spin" />
