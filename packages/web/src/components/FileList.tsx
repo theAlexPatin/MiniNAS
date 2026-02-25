@@ -2,7 +2,7 @@ import { ArrowDown, ArrowUp, ArrowUpDown, Download, Folder, Link2, Trash2 } from
 import { useCallback, useMemo, useRef, useState } from 'react'
 import type { FileEntry } from '../lib/api'
 import { api } from '../lib/api'
-import { getFileIcon } from '../lib/fileIcons'
+import { getFileIcon, hasThumbnailSupport } from '../lib/fileIcons'
 import EmptyState from './ui/EmptyState'
 
 function formatBytes(bytes: number): string {
@@ -71,6 +71,7 @@ function FileListRow({
 	onToggle?: (path: string) => void
 }) {
 	const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+	const [thumbError, setThumbError] = useState(false)
 
 	const handleTouchStart = useCallback(
 		(e: React.TouchEvent) => {
@@ -98,6 +99,8 @@ function FileListRow({
 		},
 		[entry, onContextMenu],
 	)
+
+	const showThumb = hasThumbnailSupport(entry) && !thumbError
 
 	return (
 		<tr
@@ -130,7 +133,18 @@ function FileListRow({
 			)}
 			<td className="py-3 sm:py-2.5 pl-3">
 				<div className="flex items-center gap-2.5">
-					{getFileIcon(entry)}
+					{showThumb ? (
+						<div className="w-8 h-8 flex-shrink-0 rounded overflow-hidden bg-gray-100 flex items-center justify-center">
+							<img
+								src={api.getPreviewUrl(volume, entry.path, 'small')}
+								alt=""
+								className="w-8 h-8 object-cover"
+								onError={() => setThumbError(true)}
+							/>
+						</div>
+					) : (
+						getFileIcon(entry)
+					)}
 					<div className="min-w-0">
 						<span className="truncate text-gray-900 block">{entry.name}</span>
 						<span className="text-xs text-gray-400 sm:hidden">
@@ -143,10 +157,10 @@ function FileListRow({
 			</td>
 			<td className="py-3 sm:py-2.5 text-gray-500 hidden sm:table-cell">
 				{entry.isDirectory
-									? entry.childCount !== undefined
-										? `${entry.childCount} item${entry.childCount !== 1 ? 's' : ''}`
-										: '\u2014'
-									: formatBytes(entry.size)}
+					? entry.childCount !== undefined
+						? `${entry.childCount} item${entry.childCount !== 1 ? 's' : ''}`
+						: '\u2014'
+					: formatBytes(entry.size)}
 			</td>
 			<td className="py-3 sm:py-2.5 text-gray-500 hidden sm:table-cell">
 				{formatDate(entry.modifiedAt)}

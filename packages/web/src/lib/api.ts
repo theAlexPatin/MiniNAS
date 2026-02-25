@@ -137,6 +137,10 @@ export const api = {
 		return `${API_BASE}${volumeUrl('download', volume, path)}`
 	},
 
+	getPreviewUrl(volume: string, path: string, size: 'small' | 'medium' = 'small'): string {
+		return `${API_BASE}${volumeUrl('preview', volume, path)}?size=${size}`
+	},
+
 	createWebDAVToken(label: string): Promise<{ id: string; label: string; token: string }> {
 		return request('/webdav-tokens', {
 			method: 'POST',

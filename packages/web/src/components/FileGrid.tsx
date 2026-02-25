@@ -1,6 +1,7 @@
 import { Folder } from 'lucide-react'
-import { useCallback, useRef } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import type { FileEntry } from '../lib/api'
+import { api } from '../lib/api'
 import { getFileIcon, hasThumbnailSupport } from '../lib/fileIcons'
 import EmptyState from './ui/EmptyState'
 
@@ -43,6 +44,7 @@ function FileGridItem({
 	onToggle?: (path: string) => void
 }) {
 	const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+	const [thumbError, setThumbError] = useState(false)
 
 	const handleTouchStart = useCallback(
 		(e: React.TouchEvent) => {
@@ -70,6 +72,8 @@ function FileGridItem({
 		},
 		[entry, onContextMenu],
 	)
+
+	const showThumb = hasThumbnailSupport(entry) && !thumbError
 
 	return (
 		<div className="relative">
@@ -100,27 +104,21 @@ function FileGridItem({
 				onTouchMove={handleTouchEnd}
 				className={`w-full flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-lg hover:bg-gray-100 transition-colors group text-center ${isSelected ? 'bg-blue-50 ring-2 ring-brand-200' : ''}`}
 			>
-				<div className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-lg bg-gray-100">
-					{hasThumbnailSupport(entry) ? (
+				<div className="w-14 h-14 sm:w-20 sm:h-20 md:w-24 md:h-24 flex items-center justify-center rounded-lg bg-gray-100 overflow-hidden">
+					{showThumb ? (
 						<img
-							src={`/api/v1/preview/${encodeURIComponent(volume)}/${entry.path.split('/').map(encodeURIComponent).join('/')}?size=small`}
+							src={api.getPreviewUrl(volume, entry.path, 'medium')}
 							alt=""
-							className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-lg"
-							onError={(e) => {
-								;(e.target as HTMLImageElement).style.display = 'none'
-								;(e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden')
-							}}
+							className="w-14 h-14 sm:w-20 sm:h-20 md:w-24 md:h-24 object-cover"
+							onError={() => setThumbError(true)}
 						/>
-					) : null}
-					<span className={hasThumbnailSupport(entry) ? 'hidden' : ''}>
-						{getFileIcon(entry, 32)}
-					</span>
+					) : (
+						getFileIcon(entry, 32)
+					)}
 				</div>
 				<div className="w-full min-w-0">
 					<p className="text-xs sm:text-sm truncate text-gray-900">{entry.name}</p>
-					{!entry.isDirectory && (
-						<p className="text-xs text-gray-400">{formatBytes(entry.size)}</p>
-					)}
+					{!entry.isDirectory && <p className="text-xs text-gray-400">{formatBytes(entry.size)}</p>}
 				</div>
 			</button>
 		</div>
