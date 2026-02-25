@@ -20,7 +20,9 @@ import { useUpload } from '../hooks/useUpload'
 import type { FileEntry } from '../lib/api'
 import { BASE_PATH, withBase } from '../lib/basePath'
 import { getFilesFromDataTransfer } from '../lib/drop'
+import { api } from '../lib/api'
 import Breadcrumbs from './Breadcrumbs'
+import ContextMenu from './ContextMenu'
 import EmptyState from './ui/EmptyState'
 import ToastContainer from './ui/Toast'
 import FileGrid from './FileGrid'
@@ -88,6 +90,9 @@ function FileBrowserInner() {
 	const [previewFile, setPreviewFile] = useState<FileEntry | null>(null)
 	const [shareFile, setShareFile] = useState<FileEntry | null>(null)
 	const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
+	const [contextMenu, setContextMenu] = useState<{ x: number; y: number; file: FileEntry } | null>(
+		null,
+	)
 
 	// Global drag-and-drop: show overlay when files are dragged anywhere on page
 	const [globalDragging, setGlobalDragging] = useState(false)
@@ -167,6 +172,28 @@ function FileBrowserInner() {
 		window.addEventListener('popstate', onPopState)
 		return () => window.removeEventListener('popstate', onPopState)
 	}, [])
+
+	const handleContextMenu = useCallback((file: FileEntry, x: number, y: number) => {
+		setContextMenu({ x, y, file })
+	}, [])
+
+	const handleRename = useCallback(
+		(file: FileEntry) => {
+			const newName = prompt('Rename to:', file.name)
+			if (newName && newName !== file.name) {
+				const parentPath = file.path.includes('/') ? file.path.split('/').slice(0, -1).join('/') : ''
+				const destination = parentPath ? `${parentPath}/${newName}` : newName
+				api.moveFile(volume, file.path, destination).then(
+					() => {
+						addToast('success', `Renamed to "${newName}"`)
+						refetch()
+					},
+					(err) => addToast('error', `Rename failed: ${(err as Error).message}`),
+				)
+			}
+		},
+		[volume, addToast, refetch],
+	)
 
 	const handleNewFolder = useCallback(() => {
 		const name = prompt('New folder name:')
@@ -338,6 +365,7 @@ function FileBrowserInner() {
 					}
 					onPreview={setPreviewFile}
 					onShare={setShareFile}
+					onContextMenu={handleContextMenu}
 				/>
 			) : (
 				<FileGrid
@@ -345,6 +373,7 @@ function FileBrowserInner() {
 					volume={volume}
 					onNavigate={navigateTo}
 					onPreview={setPreviewFile}
+					onContextMenu={handleContextMenu}
 				/>
 			)}
 			{/* Preview Modal */}
@@ -355,6 +384,31 @@ function FileBrowserInner() {
 			{/* Share Dialog */}
 			{shareFile && (
 				<ShareDialog file={shareFile} volume={volume} onClose={() => setShareFile(null)} />
+			)}
+
+			{/* Context Menu */}
+			{contextMenu && (
+				<ContextMenu
+					x={contextMenu.x}
+					y={contextMenu.y}
+					file={contextMenu.file}
+					onClose={() => setContextMenu(null)}
+					onPreview={() => setPreviewFile(contextMenu.file)}
+					onDownload={() => {
+						window.open(api.getDownloadUrl(volume, contextMenu.file.path), '_blank')
+					}}
+					onShare={() => setShareFile(contextMenu.file)}
+					onRename={() => handleRename(contextMenu.file)}
+					onDelete={() => {
+						if (confirm(`Delete "${contextMenu.file.name}"?`)) {
+							deleteMutation.mutate(contextMenu.file.path, {
+								onSuccess: () => addToast('success', 'File deleted'),
+								onError: (err) =>
+									addToast('error', `Delete failed: ${(err as Error).message}`),
+							})
+						}
+					}}
+				/>
 			)}
 
 			{/* Upload Progress Panel */}

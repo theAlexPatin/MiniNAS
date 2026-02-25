@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowUp, ArrowUpDown, Download, Folder, Link2, Trash2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import type { FileEntry } from '../lib/api'
 import { api } from '../lib/api'
 import { getFileIcon } from '../lib/fileIcons'
@@ -40,6 +40,131 @@ interface FileListProps {
 	onDelete: (path: string) => void
 	onPreview?: (file: FileEntry) => void
 	onShare?: (file: FileEntry) => void
+	onContextMenu?: (file: FileEntry, x: number, y: number) => void
+}
+
+function FileListRow({
+	entry,
+	volume,
+	onNavigate,
+	onDelete,
+	onPreview,
+	onShare,
+	onContextMenu,
+}: {
+	entry: FileEntry
+	volume: string
+	onNavigate: (path: string) => void
+	onDelete: (path: string) => void
+	onPreview?: (file: FileEntry) => void
+	onShare?: (file: FileEntry) => void
+	onContextMenu?: (file: FileEntry, x: number, y: number) => void
+}) {
+	const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+	const handleTouchStart = useCallback(
+		(e: React.TouchEvent) => {
+			if (!onContextMenu) return
+			const touch = e.touches[0]
+			longPressTimer.current = setTimeout(() => {
+				onContextMenu(entry, touch.clientX, touch.clientY)
+			}, 500)
+		},
+		[entry, onContextMenu],
+	)
+
+	const handleTouchEnd = useCallback(() => {
+		if (longPressTimer.current) {
+			clearTimeout(longPressTimer.current)
+			longPressTimer.current = null
+		}
+	}, [])
+
+	const handleRightClick = useCallback(
+		(e: React.MouseEvent) => {
+			if (!onContextMenu) return
+			e.preventDefault()
+			onContextMenu(entry, e.clientX, e.clientY)
+		},
+		[entry, onContextMenu],
+	)
+
+	return (
+		<tr
+			className="border-b border-gray-100 hover:bg-blue-50/60 cursor-pointer group transition-colors"
+			onClick={() => {
+				if (entry.isDirectory) {
+					onNavigate(entry.path)
+				} else if (onPreview) {
+					onPreview(entry)
+				}
+			}}
+			onContextMenu={handleRightClick}
+			onTouchStart={handleTouchStart}
+			onTouchEnd={handleTouchEnd}
+			onTouchMove={handleTouchEnd}
+		>
+			<td className="py-3 sm:py-2.5 pl-3">
+				<div className="flex items-center gap-2.5">
+					{getFileIcon(entry)}
+					<div className="min-w-0">
+						<span className="truncate text-gray-900 block">{entry.name}</span>
+						<span className="text-xs text-gray-400 sm:hidden">
+							{entry.isDirectory
+								? formatDateShort(entry.modifiedAt)
+								: `${formatBytes(entry.size)} \u00B7 ${formatDateShort(entry.modifiedAt)}`}
+						</span>
+					</div>
+				</div>
+			</td>
+			<td className="py-3 sm:py-2.5 text-gray-500 hidden sm:table-cell">
+				{entry.isDirectory ? '\u2014' : formatBytes(entry.size)}
+			</td>
+			<td className="py-3 sm:py-2.5 text-gray-500 hidden sm:table-cell">
+				{formatDate(entry.modifiedAt)}
+			</td>
+			<td className="py-3 sm:py-2.5 pr-3">
+				<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+					{!entry.isDirectory && (
+						<a
+							href={api.getDownloadUrl(volume, entry.path)}
+							onClick={(e) => e.stopPropagation()}
+							className="p-2 sm:p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-700 transition-colors"
+							title="Download"
+						>
+							<Download size={16} />
+						</a>
+					)}
+					{!entry.isDirectory && onShare && (
+						<button
+							type="button"
+							onClick={(e) => {
+								e.stopPropagation()
+								onShare(entry)
+							}}
+							className="p-2 sm:p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-blue-600 transition-colors"
+							title="Share"
+						>
+							<Link2 size={16} />
+						</button>
+					)}
+					<button
+						type="button"
+						onClick={(e) => {
+							e.stopPropagation()
+							if (confirm(`Delete "${entry.name}"?`)) {
+								onDelete(entry.path)
+							}
+						}}
+						className="p-2 sm:p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+						title="Delete"
+					>
+						<Trash2 size={16} />
+					</button>
+				</div>
+			</td>
+		</tr>
+	)
 }
 
 export default function FileList({
@@ -49,6 +174,7 @@ export default function FileList({
 	onDelete,
 	onPreview,
 	onShare,
+	onContextMenu,
 }: FileListProps) {
 	const [sortField, setSortField] = useState<SortField>('name')
 	const [sortDir, setSortDir] = useState<SortDir>('asc')
@@ -138,77 +264,16 @@ export default function FileList({
 				</thead>
 				<tbody>
 					{sortedEntries.map((entry) => (
-						<tr
+						<FileListRow
 							key={entry.path}
-							className="border-b border-gray-100 hover:bg-blue-50/60 cursor-pointer group transition-colors"
-							onClick={() => {
-								if (entry.isDirectory) {
-									onNavigate(entry.path)
-								} else if (onPreview) {
-									onPreview(entry)
-								}
-							}}
-						>
-							<td className="py-3 sm:py-2.5 pl-3">
-								<div className="flex items-center gap-2.5">
-									{getFileIcon(entry)}
-									<div className="min-w-0">
-										<span className="truncate text-gray-900 block">{entry.name}</span>
-										<span className="text-xs text-gray-400 sm:hidden">
-											{entry.isDirectory
-												? formatDateShort(entry.modifiedAt)
-												: `${formatBytes(entry.size)} \u00B7 ${formatDateShort(entry.modifiedAt)}`}
-										</span>
-									</div>
-								</div>
-							</td>
-							<td className="py-3 sm:py-2.5 text-gray-500 hidden sm:table-cell">
-								{entry.isDirectory ? '\u2014' : formatBytes(entry.size)}
-							</td>
-							<td className="py-3 sm:py-2.5 text-gray-500 hidden sm:table-cell">
-								{formatDate(entry.modifiedAt)}
-							</td>
-							<td className="py-3 sm:py-2.5 pr-3">
-								<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-									{!entry.isDirectory && (
-										<a
-											href={api.getDownloadUrl(volume, entry.path)}
-											onClick={(e) => e.stopPropagation()}
-											className="p-2 sm:p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-700 transition-colors"
-											title="Download"
-										>
-											<Download size={16} />
-										</a>
-									)}
-									{!entry.isDirectory && onShare && (
-										<button
-											type="button"
-											onClick={(e) => {
-												e.stopPropagation()
-												onShare(entry)
-											}}
-											className="p-2 sm:p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-blue-600 transition-colors"
-											title="Share"
-										>
-											<Link2 size={16} />
-										</button>
-									)}
-									<button
-										type="button"
-										onClick={(e) => {
-											e.stopPropagation()
-											if (confirm(`Delete "${entry.name}"?`)) {
-												onDelete(entry.path)
-											}
-										}}
-										className="p-2 sm:p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
-										title="Delete"
-									>
-										<Trash2 size={16} />
-									</button>
-								</div>
-							</td>
-						</tr>
+							entry={entry}
+							volume={volume}
+							onNavigate={onNavigate}
+							onDelete={onDelete}
+							onPreview={onPreview}
+							onShare={onShare}
+							onContextMenu={onContextMenu}
+						/>
 					))}
 				</tbody>
 			</table>
