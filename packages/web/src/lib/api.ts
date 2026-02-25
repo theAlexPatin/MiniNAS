@@ -52,6 +52,7 @@ export interface FileEntry {
 	modifiedAt: string
 	mimeType: string | null
 	hasThumbnail?: boolean
+	childCount?: number
 }
 
 export interface DirectoryListing {

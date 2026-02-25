@@ -142,7 +142,11 @@ function FileListRow({
 				</div>
 			</td>
 			<td className="py-3 sm:py-2.5 text-gray-500 hidden sm:table-cell">
-				{entry.isDirectory ? '\u2014' : formatBytes(entry.size)}
+				{entry.isDirectory
+									? entry.childCount !== undefined
+										? `${entry.childCount} item${entry.childCount !== 1 ? 's' : ''}`
+										: '\u2014'
+									: formatBytes(entry.size)}
 			</td>
 			<td className="py-3 sm:py-2.5 text-gray-500 hidden sm:table-cell">
 				{formatDate(entry.modifiedAt)}

@@ -60,13 +60,26 @@ export async function listDirectory(
 		try {
 			const entryStat = await fs.stat(entryPath)
 			const relPath = path.relative(volume.path, entryPath)
+			const isDir = entry.isDirectory()
+
+			let childCount: number | undefined
+			if (isDir) {
+				try {
+					const children = await fs.readdir(entryPath)
+					childCount = children.filter((c) => !c.startsWith('.')).length
+				} catch {
+					// Permission errors etc — leave undefined
+				}
+			}
+
 			results.push({
 				name: entry.name,
 				path: relPath,
-				isDirectory: entry.isDirectory(),
+				isDirectory: isDir,
 				size: entryStat.size,
 				modifiedAt: entryStat.mtime.toISOString(),
-				mimeType: entry.isDirectory() ? null : mime.lookup(entry.name) || null,
+				mimeType: isDir ? null : mime.lookup(entry.name) || null,
+				childCount,
 			})
 		} catch {}
 	}

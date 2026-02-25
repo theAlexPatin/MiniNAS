@@ -9,6 +9,7 @@ export const FileEntrySchema = z.object({
 	modifiedAt: z.string(),
 	mimeType: z.string().nullable(),
 	hasThumbnail: z.boolean().optional(),
+	childCount: z.number().optional(),
 })
 
 export type FileEntry = z.infer<typeof FileEntrySchema>
