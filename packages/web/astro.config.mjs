@@ -28,7 +28,7 @@ function loadAppName() {
 // Rewrite /volumes/X/Y/Z to /volumes so the catch-all [...path].astro
 // page is served for all sub-paths (used in both dev and preview).
 function volumesFallback(req, _res, next) {
-	if (req.url && req.url.startsWith('/volumes/') && !req.url.includes('.')) {
+	if (req.url?.startsWith('/volumes/') && !req.url.includes('.')) {
 		req.url = '/volumes'
 	}
 	next()

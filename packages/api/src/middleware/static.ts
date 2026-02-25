@@ -90,7 +90,10 @@ export function createStaticMiddleware(distDir: string) {
 		if (ext === '.html') {
 			let html = raw.toString('utf-8')
 			const appName = config.appName
-			html = html.replace('<head>', `<head><script>window.__BASE_PATH__="${bp}";window.__APP_NAME__=${JSON.stringify(appName)};</script>`)
+			html = html.replace(
+				'<head>',
+				`<head><script>window.__BASE_PATH__="${bp}";window.__APP_NAME__=${JSON.stringify(appName)};</script>`,
+			)
 			html = html.replace(/<title>MiniNAS(.*?)<\/title>/g, `<title>${appName}$1</title>`)
 			if (bp) {
 				// Rewrite Astro-generated asset references
