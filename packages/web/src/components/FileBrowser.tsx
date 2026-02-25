@@ -246,12 +246,12 @@ function FileBrowserInner() {
 	return (
 		<div className="max-w-6xl mx-auto px-4 py-6">
 			{/* Header */}
-			<div className="flex items-center justify-between mb-6">
-				<div className="flex items-center gap-2.5">
+			<div className="flex items-center justify-between gap-3 mb-6">
+				<div className="flex items-center gap-2.5 shrink-0">
 					<img src="/logo.png" alt="MiniNAS" className="w-8 h-8" />
-					<h1 className="text-xl font-semibold text-gray-900">MiniNAS</h1>
+					<h1 className="text-xl font-semibold text-gray-900 hidden sm:block">MiniNAS</h1>
 				</div>
-				<div className="flex items-center gap-4">
+				<div className="flex items-center gap-2 sm:gap-4 min-w-0">
 					<VolumeSelector selectedVolume={volume} onSelect={handleVolumeSelect} />
 					{user?.role === 'admin' && (
 						<a

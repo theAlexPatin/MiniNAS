@@ -55,7 +55,7 @@ export default function VolumeSelector({ selectedVolume, onSelect }: VolumeSelec
 			<select
 				value={selectedVolume}
 				onChange={(e) => onSelect(e.target.value)}
-				className="bg-white border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+				className="bg-white border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm min-w-0 max-w-[200px] sm:max-w-none truncate"
 			>
 				{volumes.map((v: VolumeInfo) => (
 					<option key={v.id} value={v.id}>
