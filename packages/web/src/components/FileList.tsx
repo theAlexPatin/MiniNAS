@@ -71,23 +71,23 @@ export default function FileList({
 								}
 							}}
 						>
-							<td className="py-2.5 pl-3">
+							<td className="py-3 sm:py-2.5 pl-3">
 								<div className="flex items-center gap-2.5">
 									{getFileIcon(entry)}
 									<span className="truncate text-gray-900">{entry.name}</span>
 								</div>
 							</td>
-							<td className="py-2.5 text-gray-500">
+							<td className="py-3 sm:py-2.5 text-gray-500">
 								{entry.isDirectory ? '\u2014' : formatBytes(entry.size)}
 							</td>
-							<td className="py-2.5 text-gray-500">{formatDate(entry.modifiedAt)}</td>
-							<td className="py-2.5 pr-3">
+							<td className="py-3 sm:py-2.5 text-gray-500">{formatDate(entry.modifiedAt)}</td>
+							<td className="py-3 sm:py-2.5 pr-3">
 								<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
 									{!entry.isDirectory && (
 										<a
 											href={api.getDownloadUrl(volume, entry.path)}
 											onClick={(e) => e.stopPropagation()}
-											className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-700 transition-colors"
+											className="p-2 sm:p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-700 transition-colors"
 											title="Download"
 										>
 											<Download size={16} />
@@ -100,7 +100,7 @@ export default function FileList({
 												e.stopPropagation()
 												onShare(entry)
 											}}
-											className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-blue-600 transition-colors"
+											className="p-2 sm:p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-blue-600 transition-colors"
 											title="Share"
 										>
 											<Link2 size={16} />
@@ -114,7 +114,7 @@ export default function FileList({
 												onDelete(entry.path)
 											}
 										}}
-										className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+										className="p-2 sm:p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
 										title="Delete"
 									>
 										<Trash2 size={16} />

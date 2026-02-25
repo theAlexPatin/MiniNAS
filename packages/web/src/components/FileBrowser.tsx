@@ -203,7 +203,7 @@ function FileBrowserInner() {
 					{user?.role === 'admin' && (
 						<a
 							href={withBase('/admin')}
-							className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+							className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
 							title="Admin"
 						>
 							<Shield size={18} />
@@ -211,7 +211,7 @@ function FileBrowserInner() {
 					)}
 					<a
 						href={withBase('/settings')}
-						className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+						className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
 						title="Settings"
 					>
 						<Settings size={18} />
@@ -219,7 +219,7 @@ function FileBrowserInner() {
 					<button
 						type="button"
 						onClick={logout}
-						className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+						className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
 						title="Sign out"
 					>
 						<LogOut size={18} />
@@ -286,7 +286,7 @@ function FileBrowserInner() {
 					<button
 						type="button"
 						onClick={() => refetch()}
-						className="p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+						className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
 						title="Refresh"
 					>
 						<RefreshCw size={16} />

@@ -53,7 +53,7 @@ export default function SearchBar({ volume, onNavigate }: SearchBarProps) {
 							setQuery('')
 							setIsOpen(false)
 						}}
-						className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+						className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600"
 					>
 						<X size={14} />
 					</button>
