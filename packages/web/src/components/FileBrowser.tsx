@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
+	Download,
 	FolderPlus,
 	HardDrive,
 	LayoutGrid,
@@ -9,12 +10,15 @@ import {
 	RefreshCw,
 	Settings,
 	Shield,
+	Trash2,
 	Upload,
 	UploadCloud,
+	X,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useCreateDirectory, useDeleteFile, useFiles } from '../hooks/useFiles'
+import { useSelection } from '../hooks/useSelection'
 import { useToast } from '../hooks/useToast'
 import { useUpload } from '../hooks/useUpload'
 import type { FileEntry } from '../lib/api'
@@ -93,6 +97,7 @@ function FileBrowserInner() {
 	const [contextMenu, setContextMenu] = useState<{ x: number; y: number; file: FileEntry } | null>(
 		null,
 	)
+	const { selected, toggle: toggleSelection, selectAll, clear: clearSelection, count: selectionCount } = useSelection()
 
 	// Global drag-and-drop: show overlay when files are dragged anywhere on page
 	const [globalDragging, setGlobalDragging] = useState(false)
@@ -148,7 +153,8 @@ function FileBrowserInner() {
 		history.pushState(null, '', url)
 		setLocationPath(url)
 		setPreviewFile(null)
-	}, [])
+		clearSelection()
+	}, [clearSelection])
 
 	// Handle volume selection
 	const handleVolumeSelect = useCallback((id: string) => {
@@ -341,6 +347,79 @@ function FileBrowserInner() {
 				</div>
 			)}
 
+			{/* Bulk Action Bar */}
+			{selectionCount > 0 && (
+				<div className="flex items-center gap-3 mb-4 px-4 py-2.5 bg-brand-50 border border-brand-200 rounded-lg">
+					<span className="text-sm font-medium text-brand-700">
+						{selectionCount} selected
+					</span>
+					<div className="flex items-center gap-2 ml-auto">
+						<button
+							type="button"
+							onClick={async () => {
+								const paths = Array.from(selected)
+								try {
+									const res = await fetch(`${withBase('/api/v1')}/download/zip`, {
+										method: 'POST',
+										credentials: 'include',
+										headers: { 'Content-Type': 'application/json' },
+										body: JSON.stringify({ volume, paths }),
+									})
+									if (!res.ok) throw new Error('Download failed')
+									const blob = await res.blob()
+									const url = URL.createObjectURL(blob)
+									const a = document.createElement('a')
+									a.href = url
+									a.download = 'download.zip'
+									a.click()
+									URL.revokeObjectURL(url)
+								} catch (err) {
+									addToast('error', `Download failed: ${(err as Error).message}`)
+								}
+							}}
+							className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 shadow-sm transition-colors"
+						>
+							<Download size={16} />
+							Download
+						</button>
+						<button
+							type="button"
+							onClick={async () => {
+								if (!confirm(`Delete ${selectionCount} items?`)) return
+								const paths = Array.from(selected)
+								let failed = 0
+								for (const path of paths) {
+									try {
+										await api.deleteFile(volume, path)
+									} catch {
+										failed++
+									}
+								}
+								clearSelection()
+								refetch()
+								if (failed > 0) {
+									addToast('error', `Failed to delete ${failed} items`)
+								} else {
+									addToast('success', `Deleted ${paths.length} items`)
+								}
+							}}
+							className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md bg-red-600 hover:bg-red-700 text-white transition-colors"
+						>
+							<Trash2 size={16} />
+							Delete
+						</button>
+						<button
+							type="button"
+							onClick={clearSelection}
+							className="p-1.5 rounded-md hover:bg-brand-100 text-brand-500 transition-colors"
+							title="Clear selection"
+						>
+							<X size={16} />
+						</button>
+					</div>
+				</div>
+			)}
+
 			{/* Content */}
 			{!volume ? (
 				<EmptyState icon={HardDrive} title="Select a volume to get started" />
@@ -366,6 +445,10 @@ function FileBrowserInner() {
 					onPreview={setPreviewFile}
 					onShare={setShareFile}
 					onContextMenu={handleContextMenu}
+					selectable
+					selected={selected}
+					onToggle={toggleSelection}
+					onSelectAll={(paths) => (paths.length > 0 ? selectAll(paths) : clearSelection())}
 				/>
 			) : (
 				<FileGrid
@@ -374,6 +457,9 @@ function FileBrowserInner() {
 					onNavigate={navigateTo}
 					onPreview={setPreviewFile}
 					onContextMenu={handleContextMenu}
+					selectable
+					selected={selected}
+					onToggle={toggleSelection}
 				/>
 			)}
 			{/* Preview Modal */}

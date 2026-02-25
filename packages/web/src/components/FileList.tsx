@@ -41,6 +41,10 @@ interface FileListProps {
 	onPreview?: (file: FileEntry) => void
 	onShare?: (file: FileEntry) => void
 	onContextMenu?: (file: FileEntry, x: number, y: number) => void
+	selectable?: boolean
+	selected?: Set<string>
+	onToggle?: (path: string) => void
+	onSelectAll?: (paths: string[]) => void
 }
 
 function FileListRow({
@@ -51,6 +55,9 @@ function FileListRow({
 	onPreview,
 	onShare,
 	onContextMenu,
+	selectable,
+	isSelected,
+	onToggle,
 }: {
 	entry: FileEntry
 	volume: string
@@ -59,6 +66,9 @@ function FileListRow({
 	onPreview?: (file: FileEntry) => void
 	onShare?: (file: FileEntry) => void
 	onContextMenu?: (file: FileEntry, x: number, y: number) => void
+	selectable?: boolean
+	isSelected?: boolean
+	onToggle?: (path: string) => void
 }) {
 	const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -91,7 +101,7 @@ function FileListRow({
 
 	return (
 		<tr
-			className="border-b border-gray-100 hover:bg-blue-50/60 cursor-pointer group transition-colors"
+			className={`border-b border-gray-100 hover:bg-blue-50/60 cursor-pointer group transition-colors ${isSelected ? 'bg-blue-50' : ''}`}
 			onClick={() => {
 				if (entry.isDirectory) {
 					onNavigate(entry.path)
@@ -104,6 +114,20 @@ function FileListRow({
 			onTouchEnd={handleTouchEnd}
 			onTouchMove={handleTouchEnd}
 		>
+			{selectable && (
+				<td className="py-3 sm:py-2.5 pl-3 w-8">
+					<input
+						type="checkbox"
+						checked={isSelected}
+						onChange={(e) => {
+							e.stopPropagation()
+							onToggle?.(entry.path)
+						}}
+						onClick={(e) => e.stopPropagation()}
+						className="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+					/>
+				</td>
+			)}
 			<td className="py-3 sm:py-2.5 pl-3">
 				<div className="flex items-center gap-2.5">
 					{getFileIcon(entry)}
@@ -175,6 +199,10 @@ export default function FileList({
 	onPreview,
 	onShare,
 	onContextMenu,
+	selectable,
+	selected,
+	onToggle,
+	onSelectAll,
 }: FileListProps) {
 	const [sortField, setSortField] = useState<SortField>('name')
 	const [sortDir, setSortDir] = useState<SortDir>('asc')
@@ -215,6 +243,8 @@ export default function FileList({
 		return <EmptyState icon={Folder} title="This folder is empty" />
 	}
 
+	const allSelected = selected && entries.length > 0 && entries.every((e) => selected.has(e.path))
+
 	const SortIcon = ({ field }: { field: SortField }) => {
 		if (sortField !== field) return <ArrowUpDown size={14} className="text-gray-300" />
 		return sortDir === 'asc' ? (
@@ -229,6 +259,22 @@ export default function FileList({
 			<table className="w-full text-sm">
 				<thead>
 					<tr className="border-b border-gray-200 text-gray-500 text-left">
+						{selectable && (
+							<th className="pb-2 pl-3 w-8">
+								<input
+									type="checkbox"
+									checked={allSelected}
+									onChange={() => {
+										if (allSelected) {
+											onSelectAll?.([])
+										} else {
+											onSelectAll?.(entries.map((e) => e.path))
+										}
+									}}
+									className="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+								/>
+							</th>
+						)}
 						<th className="pb-2 pl-3 font-medium">
 							<button
 								type="button"
@@ -273,6 +319,9 @@ export default function FileList({
 							onPreview={onPreview}
 							onShare={onShare}
 							onContextMenu={onContextMenu}
+							selectable={selectable}
+							isSelected={selected?.has(entry.path)}
+							onToggle={onToggle}
 						/>
 					))}
 				</tbody>
