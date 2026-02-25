@@ -28,6 +28,7 @@ import { api } from '../lib/api'
 import Breadcrumbs from './Breadcrumbs'
 import ContextMenu from './ContextMenu'
 import EmptyState from './ui/EmptyState'
+import { FileGridSkeleton, FileListSkeleton } from './ui/Skeleton'
 import ToastContainer from './ui/Toast'
 import FileGrid from './FileGrid'
 import FileList from './FileList'
@@ -424,9 +425,7 @@ function FileBrowserInner() {
 			{!volume ? (
 				<EmptyState icon={HardDrive} title="Select a volume to get started" />
 			) : isLoading ? (
-				<div className="flex items-center justify-center py-20 text-gray-400">
-					<Loader2 size={24} className="animate-spin" />
-				</div>
+				viewMode === 'list' ? <FileListSkeleton /> : <FileGridSkeleton />
 			) : error ? (
 				<div className="text-center py-20 text-red-500">
 					Error loading files: {(error as Error).message}
