@@ -15,12 +15,14 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useCreateDirectory, useDeleteFile, useFiles } from '../hooks/useFiles'
+import { useToast } from '../hooks/useToast'
 import { useUpload } from '../hooks/useUpload'
 import type { FileEntry } from '../lib/api'
 import { BASE_PATH, withBase } from '../lib/basePath'
 import { getFilesFromDataTransfer } from '../lib/drop'
 import Breadcrumbs from './Breadcrumbs'
 import EmptyState from './ui/EmptyState'
+import ToastContainer from './ui/Toast'
 import FileGrid from './FileGrid'
 import FileList from './FileList'
 import PreviewModal from './PreviewModal'
@@ -74,6 +76,7 @@ function FileBrowserInner() {
 
 	const { data, isLoading, error, refetch } = useFiles(volume, currentPath)
 
+	const { toasts, addToast, removeToast } = useToast()
 	const deleteMutation = useDeleteFile(volume, currentPath)
 	const mkdirMutation = useCreateDirectory(volume, currentPath)
 	const { uploads, addFiles, pauseUpload, resumeUpload, cancelUpload, clearCompleted } = useUpload(
@@ -168,9 +171,12 @@ function FileBrowserInner() {
 	const handleNewFolder = useCallback(() => {
 		const name = prompt('New folder name:')
 		if (name) {
-			mkdirMutation.mutate(name)
+			mkdirMutation.mutate(name, {
+				onSuccess: () => addToast('success', `Created folder "${name}"`),
+				onError: (err) => addToast('error', `Failed to create folder: ${(err as Error).message}`),
+			})
 		}
-	}, [mkdirMutation])
+	}, [mkdirMutation, addToast])
 
 	// Build breadcrumb segments
 	const pathParts = currentPath.split('/').filter(Boolean)
@@ -324,7 +330,12 @@ function FileBrowserInner() {
 					entries={data?.entries || []}
 					volume={volume}
 					onNavigate={navigateTo}
-					onDelete={(path) => deleteMutation.mutate(path)}
+					onDelete={(path) =>
+						deleteMutation.mutate(path, {
+							onSuccess: () => addToast('success', 'File deleted'),
+							onError: (err) => addToast('error', `Delete failed: ${(err as Error).message}`),
+						})
+					}
 					onPreview={setPreviewFile}
 					onShare={setShareFile}
 				/>
@@ -364,6 +375,8 @@ function FileBrowserInner() {
 					</div>
 				</div>
 			)}
+
+			<ToastContainer toasts={toasts} onDismiss={removeToast} />
 		</div>
 	)
 }
