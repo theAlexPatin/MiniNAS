@@ -18,8 +18,8 @@ class Mininas < Formula
     libexec.install "packages/api/dist/cli.js"
     libexec.install "packages/api/dist/schema.sql"
 
-    # Install web static assets
-    (libexec/"web").install Dir["packages/web/dist/*"]
+    # Install web static assets (unified Expo app)
+    (libexec/"web").install Dir["packages/app/dist/*"]
 
     # Install node_modules for native addons (better-sqlite3, sharp)
     cd "packages/api" do

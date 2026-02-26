@@ -1,4 +1,5 @@
 import { Platform } from 'react-native'
+import { BASE_PATH } from './config'
 
 let _serverUrl = ''
 
@@ -7,7 +8,7 @@ export function setServerUrl(url: string) {
 }
 
 export function getApiBase(): string {
-	if (Platform.OS === 'web') return '/api/v1'
+	if (Platform.OS === 'web') return `${BASE_PATH}/api/v1`
 	return `${_serverUrl}/api/v1`
 }
 
