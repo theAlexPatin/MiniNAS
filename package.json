@@ -6,7 +6,7 @@
 	"scripts": {
 		"dev": "turbo dev",
 		"build": "turbo build",
-		"start": "pnpm build && (pnpm --filter api start & pnpm --filter web preview)",
+		"start": "pnpm build && WEB_DIST_DIR=packages/app/dist pnpm --filter api start",
 		"lint": "biome check .",
 		"lint:fix": "biome check --fix .",
 		"format": "biome format .",
