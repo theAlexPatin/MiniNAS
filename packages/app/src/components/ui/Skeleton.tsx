@@ -39,8 +39,8 @@ export function FileListSkeleton({ rows = 8 }: { rows?: number }) {
 				<Skeleton width={64} height={16} />
 				<Skeleton width={96} height={16} />
 			</View>
-			{Array.from({ length: rows }).map((_, i) => (
-				<View key={i} style={styles.row}>
+			{Array.from({ length: rows }, (_, i) => `row-${i}`).map((id) => (
+				<View key={id} style={styles.row}>
 					<Skeleton width={20} height={20} style={styles.iconPlaceholder} />
 					<Skeleton width={180} height={16} style={{ flex: 1 }} />
 					<Skeleton width={64} height={14} />
@@ -53,8 +53,8 @@ export function FileListSkeleton({ rows = 8 }: { rows?: number }) {
 export function FileGridSkeleton({ items = 10 }: { items?: number }) {
 	return (
 		<View style={styles.grid}>
-			{Array.from({ length: items }).map((_, i) => (
-				<View key={i} style={styles.gridItem}>
+			{Array.from({ length: items }, (_, i) => `item-${i}`).map((id) => (
+				<View key={id} style={styles.gridItem}>
 					<Skeleton width={56} height={56} style={{ borderRadius: Outlines.borderRadius.lg }} />
 					<Skeleton width={64} height={12} />
 					<Skeleton width={40} height={10} />
