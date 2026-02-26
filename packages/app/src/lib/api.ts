@@ -3,248 +3,248 @@ import { Platform } from 'react-native'
 let _serverUrl = ''
 
 export function setServerUrl(url: string) {
-  _serverUrl = url.replace(/\/$/, '')
+	_serverUrl = url.replace(/\/$/, '')
 }
 
 export function getApiBase(): string {
-  if (Platform.OS === 'web') return '/api/v1'
-  return `${_serverUrl}/api/v1`
+	if (Platform.OS === 'web') return '/api/v1'
+	return `${_serverUrl}/api/v1`
 }
 
 function encodePath(filePath: string): string {
-  if (!filePath) return ''
-  return filePath.split('/').map(encodeURIComponent).join('/')
+	if (!filePath) return ''
+	return filePath.split('/').map(encodeURIComponent).join('/')
 }
 
 function volumeUrl(prefix: string, volume: string, filePath = ''): string {
-  const encoded = encodePath(filePath)
-  return encoded
-    ? `/${prefix}/${encodeURIComponent(volume)}/${encoded}`
-    : `/${prefix}/${encodeURIComponent(volume)}`
+	const encoded = encodePath(filePath)
+	return encoded
+		? `/${prefix}/${encodeURIComponent(volume)}/${encoded}`
+		: `/${prefix}/${encodeURIComponent(volume)}`
 }
 
 class ApiError extends Error {
-  constructor(
-    public status: number,
-    message: string,
-  ) {
-    super(message)
-    this.name = 'ApiError'
-  }
+	constructor(
+		public status: number,
+		message: string,
+	) {
+		super(message)
+		this.name = 'ApiError'
+	}
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${getApiBase()}${path}`, {
-    credentials: 'include',
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  })
+	const res = await fetch(`${getApiBase()}${path}`, {
+		credentials: 'include',
+		...options,
+		headers: {
+			'Content-Type': 'application/json',
+			...options?.headers,
+		},
+	})
 
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }))
-    throw new ApiError(res.status, body.error || res.statusText)
-  }
+	if (!res.ok) {
+		const body = await res.json().catch(() => ({ error: res.statusText }))
+		throw new ApiError(res.status, body.error || res.statusText)
+	}
 
-  return res.json()
+	return res.json()
 }
 
 export interface FileEntry {
-  name: string
-  path: string
-  isDirectory: boolean
-  size: number
-  modifiedAt: string
-  mimeType: string | null
-  hasThumbnail?: boolean
-  childCount?: number
+	name: string
+	path: string
+	isDirectory: boolean
+	size: number
+	modifiedAt: string
+	mimeType: string | null
+	hasThumbnail?: boolean
+	childCount?: number
 }
 
 export interface DirectoryListing {
-  entries: FileEntry[]
-  path: string
-  volume: string
+	entries: FileEntry[]
+	path: string
+	volume: string
 }
 
 export interface VolumeInfo {
-  id: string
-  label: string
-  totalBytes: number
-  freeBytes: number
-  usedBytes: number
+	id: string
+	label: string
+	totalBytes: number
+	freeBytes: number
+	usedBytes: number
 }
 
 export interface WebDAVToken {
-  id: string
-  user_id: string
-  label: string
-  created_at: string
-  last_used_at: string | null
+	id: string
+	user_id: string
+	label: string
+	created_at: string
+	last_used_at: string | null
 }
 
 export interface AdminVolume {
-  id: string
-  label: string
-  path: string
-  visibility: 'public' | 'private'
+	id: string
+	label: string
+	path: string
+	visibility: 'public' | 'private'
 }
 
 export interface AdminUser {
-  id: string
-  username: string
-  role: string
-  created_at: string
+	id: string
+	username: string
+	role: string
+	created_at: string
 }
 
 export interface AdminInvite {
-  id: string
-  username: string
-  created_by: string
-  created_at: string
-  expires_at: string
-  used_at: string | null
-  used_by: string | null
+	id: string
+	username: string
+	created_by: string
+	created_at: string
+	expires_at: string
+	used_at: string | null
+	used_by: string | null
 }
 
 export interface VolumeAccessUser {
-  id: string
-  username: string
+	id: string
+	username: string
 }
 
 export const api = {
-  listFiles(volume: string, path = ''): Promise<DirectoryListing> {
-    return request(volumeUrl('files', volume, path))
-  },
+	listFiles(volume: string, path = ''): Promise<DirectoryListing> {
+		return request(volumeUrl('files', volume, path))
+	},
 
-  deleteFile(volume: string, path: string): Promise<{ ok: boolean }> {
-    return request(volumeUrl('files', volume, path), { method: 'DELETE' })
-  },
+	deleteFile(volume: string, path: string): Promise<{ ok: boolean }> {
+		return request(volumeUrl('files', volume, path), { method: 'DELETE' })
+	},
 
-  moveFile(volume: string, path: string, destination: string): Promise<{ ok: boolean }> {
-    return request(volumeUrl('files', volume, path), {
-      method: 'PATCH',
-      body: JSON.stringify({ destination }),
-    })
-  },
+	moveFile(volume: string, path: string, destination: string): Promise<{ ok: boolean }> {
+		return request(volumeUrl('files', volume, path), {
+			method: 'PATCH',
+			body: JSON.stringify({ destination }),
+		})
+	},
 
-  createDirectory(volume: string, parentPath: string, name: string): Promise<{ ok: boolean }> {
-    return request(volumeUrl('files', volume, parentPath), {
-      method: 'POST',
-      body: JSON.stringify({ name }),
-    })
-  },
+	createDirectory(volume: string, parentPath: string, name: string): Promise<{ ok: boolean }> {
+		return request(volumeUrl('files', volume, parentPath), {
+			method: 'POST',
+			body: JSON.stringify({ name }),
+		})
+	},
 
-  getVolumes(): Promise<{ volumes: VolumeInfo[] }> {
-    return request('/volumes')
-  },
+	getVolumes(): Promise<{ volumes: VolumeInfo[] }> {
+		return request('/volumes')
+	},
 
-  getDownloadUrl(volume: string, path: string): string {
-    return `${getApiBase()}${volumeUrl('download', volume, path)}`
-  },
+	getDownloadUrl(volume: string, path: string): string {
+		return `${getApiBase()}${volumeUrl('download', volume, path)}`
+	},
 
-  getInlineUrl(volume: string, path: string): string {
-    return `${getApiBase()}${volumeUrl('download', volume, path)}?inline`
-  },
+	getInlineUrl(volume: string, path: string): string {
+		return `${getApiBase()}${volumeUrl('download', volume, path)}?inline`
+	},
 
-  getPreviewUrl(volume: string, path: string, size: 'small' | 'medium' = 'small'): string {
-    return `${getApiBase()}${volumeUrl('preview', volume, path)}?size=${size}`
-  },
+	getPreviewUrl(volume: string, path: string, size: 'small' | 'medium' = 'small'): string {
+		return `${getApiBase()}${volumeUrl('preview', volume, path)}?size=${size}`
+	},
 
-  createWebDAVToken(label: string): Promise<{ id: string; label: string; token: string }> {
-    return request('/webdav-tokens', {
-      method: 'POST',
-      body: JSON.stringify({ label }),
-    })
-  },
+	createWebDAVToken(label: string): Promise<{ id: string; label: string; token: string }> {
+		return request('/webdav-tokens', {
+			method: 'POST',
+			body: JSON.stringify({ label }),
+		})
+	},
 
-  listWebDAVTokens(): Promise<{ tokens: WebDAVToken[] }> {
-    return request('/webdav-tokens')
-  },
+	listWebDAVTokens(): Promise<{ tokens: WebDAVToken[] }> {
+		return request('/webdav-tokens')
+	},
 
-  revokeWebDAVToken(id: string): Promise<{ ok: boolean }> {
-    return request(`/webdav-tokens/${id}`, { method: 'DELETE' })
-  },
+	revokeWebDAVToken(id: string): Promise<{ ok: boolean }> {
+		return request(`/webdav-tokens/${id}`, { method: 'DELETE' })
+	},
 
-  getVersion(): Promise<{ version: string }> {
-    return request('/admin/version')
-  },
+	getVersion(): Promise<{ version: string }> {
+		return request('/admin/version')
+	},
 
-  triggerUpdate(): Promise<{ ok: boolean; message: string }> {
-    return request('/admin/update', { method: 'POST' })
-  },
+	triggerUpdate(): Promise<{ ok: boolean; message: string }> {
+		return request('/admin/update', { method: 'POST' })
+	},
 
-  adminListVolumes(): Promise<{ volumes: AdminVolume[] }> {
-    return request('/admin/volumes')
-  },
+	adminListVolumes(): Promise<{ volumes: AdminVolume[] }> {
+		return request('/admin/volumes')
+	},
 
-  adminListAvailableVolumes(): Promise<{ volumes: { name: string; path: string }[] }> {
-    return request('/admin/volumes/available')
-  },
+	adminListAvailableVolumes(): Promise<{ volumes: { name: string; path: string }[] }> {
+		return request('/admin/volumes/available')
+	},
 
-  adminAddVolume(id: string, label: string, path: string): Promise<{ ok: boolean; id: string }> {
-    return request('/admin/volumes', {
-      method: 'POST',
-      body: JSON.stringify({ id, label, path }),
-    })
-  },
+	adminAddVolume(id: string, label: string, path: string): Promise<{ ok: boolean; id: string }> {
+		return request('/admin/volumes', {
+			method: 'POST',
+			body: JSON.stringify({ id, label, path }),
+		})
+	},
 
-  adminRemoveVolume(id: string): Promise<{ ok: boolean }> {
-    return request(`/admin/volumes/${encodeURIComponent(id)}`, { method: 'DELETE' })
-  },
+	adminRemoveVolume(id: string): Promise<{ ok: boolean }> {
+		return request(`/admin/volumes/${encodeURIComponent(id)}`, { method: 'DELETE' })
+	},
 
-  adminSetVolumeVisibility(id: string, visibility: 'public' | 'private'): Promise<{ ok: boolean }> {
-    return request(`/admin/volumes/${encodeURIComponent(id)}/visibility`, {
-      method: 'PATCH',
-      body: JSON.stringify({ visibility }),
-    })
-  },
+	adminSetVolumeVisibility(id: string, visibility: 'public' | 'private'): Promise<{ ok: boolean }> {
+		return request(`/admin/volumes/${encodeURIComponent(id)}/visibility`, {
+			method: 'PATCH',
+			body: JSON.stringify({ visibility }),
+		})
+	},
 
-  adminGetVolumeAccess(volumeId: string): Promise<{ users: VolumeAccessUser[] }> {
-    return request(`/admin/volumes/${encodeURIComponent(volumeId)}/access`)
-  },
+	adminGetVolumeAccess(volumeId: string): Promise<{ users: VolumeAccessUser[] }> {
+		return request(`/admin/volumes/${encodeURIComponent(volumeId)}/access`)
+	},
 
-  adminGrantVolumeAccess(volumeId: string, userId: string): Promise<{ ok: boolean }> {
-    return request(`/admin/volumes/${encodeURIComponent(volumeId)}/access`, {
-      method: 'POST',
-      body: JSON.stringify({ userId }),
-    })
-  },
+	adminGrantVolumeAccess(volumeId: string, userId: string): Promise<{ ok: boolean }> {
+		return request(`/admin/volumes/${encodeURIComponent(volumeId)}/access`, {
+			method: 'POST',
+			body: JSON.stringify({ userId }),
+		})
+	},
 
-  adminRevokeVolumeAccess(volumeId: string, userId: string): Promise<{ ok: boolean }> {
-    return request(
-      `/admin/volumes/${encodeURIComponent(volumeId)}/access/${encodeURIComponent(userId)}`,
-      { method: 'DELETE' },
-    )
-  },
+	adminRevokeVolumeAccess(volumeId: string, userId: string): Promise<{ ok: boolean }> {
+		return request(
+			`/admin/volumes/${encodeURIComponent(volumeId)}/access/${encodeURIComponent(userId)}`,
+			{ method: 'DELETE' },
+		)
+	},
 
-  adminListUsers(): Promise<{ users: AdminUser[] }> {
-    return request('/admin/users')
-  },
+	adminListUsers(): Promise<{ users: AdminUser[] }> {
+		return request('/admin/users')
+	},
 
-  adminDeleteUser(id: string): Promise<{ ok: boolean }> {
-    return request(`/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE' })
-  },
+	adminDeleteUser(id: string): Promise<{ ok: boolean }> {
+		return request(`/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE' })
+	},
 
-  adminResetPasskeys(
-    userId: string,
-  ): Promise<{ ok: boolean; username: string; removedCredentials: number }> {
-    return request(`/admin/users/${encodeURIComponent(userId)}/reset-passkeys`, { method: 'POST' })
-  },
+	adminResetPasskeys(
+		userId: string,
+	): Promise<{ ok: boolean; username: string; removedCredentials: number }> {
+		return request(`/admin/users/${encodeURIComponent(userId)}/reset-passkeys`, { method: 'POST' })
+	},
 
-  adminListInvites(): Promise<{ invites: AdminInvite[] }> {
-    return request('/admin/invites')
-  },
+	adminListInvites(): Promise<{ invites: AdminInvite[] }> {
+		return request('/admin/invites')
+	},
 
-  adminCreateInvite(username: string, expiresInHours?: number): Promise<{ invite: AdminInvite }> {
-    return request('/admin/invites', {
-      method: 'POST',
-      body: JSON.stringify({ username, expiresInHours }),
-    })
-  },
+	adminCreateInvite(username: string, expiresInHours?: number): Promise<{ invite: AdminInvite }> {
+		return request('/admin/invites', {
+			method: 'POST',
+			body: JSON.stringify({ username, expiresInHours }),
+		})
+	},
 
-  adminDeleteInvite(id: string): Promise<{ ok: boolean }> {
-    return request(`/admin/invites/${encodeURIComponent(id)}`, { method: 'DELETE' })
-  },
+	adminDeleteInvite(id: string): Promise<{ ok: boolean }> {
+		return request(`/admin/invites/${encodeURIComponent(id)}`, { method: 'DELETE' })
+	},
 }

@@ -1,4 +1,4 @@
 module.exports = {
-  enableScreens: () => {},
-  enableFreeze: () => {},
+	enableScreens: () => {},
+	enableFreeze: () => {},
 }

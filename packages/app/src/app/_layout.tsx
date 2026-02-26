@@ -4,18 +4,18 @@ import { StatusBar } from 'expo-status-bar'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: { staleTime: 30_000, retry: 1 },
-  },
+	defaultOptions: {
+		queries: { staleTime: 30_000, retry: 1 },
+	},
 })
 
 export default function RootLayout() {
-  return (
-    <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
-        <StatusBar style="dark" />
-        <Stack screenOptions={{ headerShown: false }} />
-      </QueryClientProvider>
-    </SafeAreaProvider>
-  )
+	return (
+		<SafeAreaProvider>
+			<QueryClientProvider client={queryClient}>
+				<StatusBar style="dark" />
+				<Stack screenOptions={{ headerShown: false }} />
+			</QueryClientProvider>
+		</SafeAreaProvider>
+	)
 }
