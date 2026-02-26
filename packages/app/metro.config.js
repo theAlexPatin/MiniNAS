@@ -1,9 +1,19 @@
 const { getDefaultConfig } = require('expo/metro-config')
 const path = require('path')
 
+const projectRoot = __dirname
+const monorepoRoot = path.resolve(projectRoot, '../..')
+
 module.exports = (() => {
-	const config = getDefaultConfig(__dirname)
+	const config = getDefaultConfig(projectRoot)
 	const { resolver } = config
+
+	// pnpm monorepo: tell Metro where to find packages
+	config.watchFolders = [monorepoRoot]
+	config.resolver.nodeModulesPaths = [
+		path.resolve(projectRoot, 'node_modules'),
+		path.resolve(monorepoRoot, 'node_modules'),
+	]
 
 	// Dev server middleware: proxy /api and /dav requests to the MiniNAS backend
 	config.server = {
