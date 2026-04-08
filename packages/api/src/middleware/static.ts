@@ -66,19 +66,14 @@ export function createStaticMiddleware(distDir: string) {
 
 		let filePath = tryFile(distDir, pathname)
 
-		// SPA fallback: /volumes/X/Y/Z -> /volumes/index.html
-		if (!filePath && pathname.startsWith('/volumes/') && !path.extname(pathname)) {
-			filePath = path.join(distDir, 'volumes', 'index.html')
+		// SPA fallback: any non-file route → root index.html
+		if (!filePath && !path.extname(pathname)) {
+			filePath = path.join(distDir, 'index.html')
+			if (!isFile(filePath)) return next()
 		}
 
 		if (!filePath) {
-			// Try index.html for root
-			if (pathname === '/') {
-				filePath = path.join(distDir, 'index.html')
-				if (!isFile(filePath)) return next()
-			} else {
-				return next()
-			}
+			return next()
 		}
 
 		const ext = path.extname(filePath)
